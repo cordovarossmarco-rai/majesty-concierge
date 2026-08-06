@@ -1,36 +1,321 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Majesty Day Spa inquiry and booking concierge
 
-## Getting Started
+A prototype that takes an enquiry from a prospective guest, works out what they are asking for,
+recommends a treatment from the spa's own list, offers appointment times, and hands the front desk
+something they can act on.
 
-First, run the development server:
+Built as a paid technical trial. It is a prototype, not a production system, and the sections on
+limitations and production work below are specific about the difference.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## The idea it is built around
+
+A spa enquiry is not really a data-entry problem. Most guests write a sentence or two, some know
+exactly what they want, some want to be told, and a few are writing because something went wrong
+last time. The useful thing a system can do is tell those apart and put the third group in front
+of a person quickly.
+
+So the design question is not "how good is the summary" but "what happens when the model is
+wrong". Three answers run through the whole codebase:
+
+**The assistant is only allowed to say things it was given.** Treatments come from a fixed
+catalog, policies from a fixed list, appointment times from the availability module. Prices are
+absent everywhere because there is no source for them, so there is nothing to quote and nothing to
+invent. Where a field has to come from that data, the schema sent to the API is built from the
+data itself, so an invented treatment or a time the spa cannot honour is refused by the API rather
+than caught afterwards.
+
+**Escalation does not depend on the model agreeing.** A separate set of plain pattern checks runs
+before the model sees anything. If a guest mentions a manager, a refund, an allergy or an injury,
+the enquiry goes to a person whatever the model decides. The third required test scenario passes
+because of this, not because the model was asked nicely.
+
+**A guard can add caution, never remove it.** Everything the model returns passes through one
+function that can escalate but cannot de-escalate. If either the model or the pattern checks think
+a person should look, a person looks.
+
+---
+
+## Technology and platforms
+
+| | |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS v4 |
+| Database | PostgreSQL, accessed with Drizzle ORM and the standard `pg` driver |
+| AI | Claude (`claude-opus-5`) via the official Anthropic TypeScript SDK |
+| Validation | Zod, one schema shared by the browser and the server |
+| Tests | Vitest |
+| Hosting | Vercel |
+
+The `pg` driver is used rather than a hosted provider's own client so that the same code runs
+against a local Postgres in development and a managed one in production, with nothing changing but
+the connection string.
+
+---
+
+## How it fits together
+
+```
+Guest fills in the form
+        |
+        v
+POST /api/inquiries
+        |
+        +-- validate (Zod, the same schema the form used)
+        +-- INSERT the lead
+        +-- respond 201 to the guest            <-- the guest is done here
+        |
+        v  (after the response, via Next's after())
+   triage()        deterministic checks, before the model
+   classify()      Claude, constrained by catalog + policies + free slots
+   applyGuards()   drops anything invented, adds caution, never removes it
+        |
+        +-- INSERT the reading into lead_ai
+        +-- record classification + run four automations, each logged
+        |
+        v
+   /admin  staff read, edit the draft, change the status
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**The lead is written down before anything calls a third party.** If the Anthropic API is slow,
+rate limiting us or down, the spa still has the enquiry and the guest still gets a confirmation.
+This was tested by running the whole flow with a deliberately invalid API key: the guest gets their
+201, the message is stored intact, the lead is flagged for a person, and a plain holding reply is
+prepared that a receptionist could send as it stands.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Reading an enquiry takes several seconds, so it happens after the response rather than during it.
+The guest waits on a database insert, not on a model. The cost of that choice is a few seconds
+where a lead exists with no reading attached, so the dashboard shows "being read" rather than a
+blank row, which would look like a lost enquiry.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Database structure
 
-To learn more about Next.js, take a look at the following resources:
+Three tables. The separation is deliberate rather than tidy-mindedness.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**`leads`** holds what the guest actually submitted, plus a status of `new`, `contacted`, `booked` or
+`closed`. Nothing the model produces is written here, so re-reading an enquiry can never alter what
+the guest said.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**`lead_ai`** holds one row per lead with the reading: summary, category, priority, recommended
+treatment, whether a person is needed, the reason if so, the draft reply, the recommended next
+action, the times offered, and which model produced it. Keyed on the lead id, so a re-run replaces
+the previous reading instead of failing.
 
-## Deploy on Vercel
+**`automation_runs`** holds one row per step per lead, with `ok`, `failed` or `skipped` and a detail
+line. A step that decides not to act writes a `skipped` row with its reason rather than writing
+nothing, so "the automation never ran" and "it ran and decided this guest should not be emailed"
+are distinguishable when someone comes to look.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Schema lives in `lib/db/schema.ts`. Apply it with `npm run db:push`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## The decision logic
+
+### Before the model: `lib/triage.ts`
+
+Plain pattern matching over the message for a manager or supervisor, a complaint, a refund,
+dissatisfaction, an allergy, a possible injury or reaction, and legal language. Any hit forces
+escalation regardless of what the model later says.
+
+The patterns are deliberately loose. An enquiry escalated when it did not need to be costs a staff
+member thirty seconds of reading; a complaint the assistant tries to answer alone costs a great
+deal more. The reaction patterns match how guests actually write, so "my skin has been red and
+irritated" escalates and not only the word "reaction", which nobody uses.
+
+### The model: `lib/classify.ts`
+
+One call, no agent loop, because this is a classification with a known output shape. The response
+is constrained by a JSON schema built partly from live data:
+
+- `serviceInterest` accepts only ids from the catalog
+- `proposedSlots` accepts only times the availability module offered on this request
+- `priority`, `nextAction` and the rest are fixed enumerations
+
+The system prompt carries the catalog, the policies, the free times, and a short list of rules
+where every prohibition is paired with what to do instead, because "never quote a price" on its own
+leaves the model with nothing to say. Effort is set to `low`: this is a short classification with a
+deterministic guard behind it, so the tokens are better spent on being quick.
+
+If the call fails for any reason the enquiry falls back to a safe reading: needs a person, warm
+priority, a callback queued, and a neutral holding reply. **A failed classification never loses a
+lead**, it only means someone reads it unaided.
+
+### After the model: `lib/guard.ts`
+
+Drops a treatment that is not in the catalog, drops a time that was not offered, drops a time the
+recommended treatment could not finish in before closing, flags a voucher pointed at something the
+voucher does not cover, withholds appointment times entirely from someone writing in to complain,
+and stops sending a guest to online booking once a person needs to look.
+
+Each of those adds a line to the reason shown on the lead, so the dashboard says why an enquiry was
+held back rather than just that it was.
+
+### Availability: `lib/availability.ts`
+
+Sample slots, generated deterministically so the same date always produces the same free and taken
+times and a demonstration looks the same twice. The spa is closed on Mondays, opens nine to seven,
+weekends are busier, and a treatment must finish before closing, so a half day package simply has
+fewer possible start times than a facial.
+
+Times have to be offered in the same breath as the recommendation, before anyone knows which
+treatment it will be, so the length is rounded up to the longest candidate. A slot that fits a half
+day also fits a facial; the reverse is not true, which is the reason it rounds up rather than down.
+
+---
+
+## Automations
+
+Four steps run after every enquiry, in `lib/automations.ts`. Each writes one row to
+`automation_runs` through a single helper, so there is one place where a result is recorded rather
+than four.
+
+| Step | What it does | When it skips |
+|---|---|---|
+| `confirmation_email` | Prepares an acknowledgement for the guest | Held back when the enquiry goes to a manager, so a complaint is not answered by an autoresponder |
+| `hot_lead_notification` | Tells the front desk | When the priority is not hot |
+| `followup_task` | Creates a task with the escalation reason | When nothing needs a person |
+| `crm_sync` | Upserts the guest and enquiry | Does not skip |
+
+**Every one of these is simulated, and says so in the text it writes to the log.** Nothing is sent,
+and nothing is written outside this database. The wording is deliberate: a dashboard that looks
+convincing is exactly the thing that could be misread as evidence that a guest was emailed.
+
+What is being demonstrated is the decision each step takes, not the delivery. Which guests should
+be emailed at all is the part worth getting right.
+
+### Replacing the simulations with live integrations
+
+Each step is a single function returning a string. The change in every case is the body of that
+function; the logging, the skip conditions and the failure handling stay as they are.
+
+| Step | Live version |
+|---|---|
+| `confirmation_email` | Resend or Postmark. Send the edited draft, triggered by a staff member approving it in the dashboard rather than automatically on submit. |
+| Text messages | Twilio, gated on `contactMethod` being `text` and on the same approval. |
+| `hot_lead_notification` | Slack incoming webhook, or Twilio for a text to the duty manager out of hours. |
+| `followup_task` | Whatever the spa already uses. A Booker/Mindbody task if their plan exposes one, otherwise a shared inbox or a Trello card via webhook. |
+| `crm_sync` | The Booker/Mindbody customer API, matching on email or phone first so a returning guest is updated rather than duplicated. |
+| `availability` | Replace `slotsFor()` with a call to the booking system's availability endpoint, cached for a minute or two. The rest of the pipeline is unchanged because it already treats availability as data handed to it. |
+
+A live version would also want an outbound queue rather than firing inside the request lifecycle,
+so a failed send can be retried without re-reading the enquiry.
+
+---
+
+## Running it locally
+
+Requires Node 20 or newer and a PostgreSQL database.
+
+```bash
+git clone https://github.com/cordovarossmarco-rai/majesty-concierge
+cd majesty-concierge
+npm install
+
+cp .env.example .env.local
+# then fill in .env.local:
+#   DATABASE_URL      a Postgres connection string
+#   ANTHROPIC_API_KEY from console.anthropic.com
+#   ADMIN_TOKEN       any long random string, e.g. openssl rand -hex 24
+
+npm run db:push     # create the tables
+npm run dev         # http://localhost:3000
+```
+
+The guest form is at `/`. The staff dashboard is at `/admin` and asks for the `ADMIN_TOKEN`.
+
+```bash
+npm test            # unit tests for triage, the guard, and availability
+npm run build       # production build
+```
+
+---
+
+## Security
+
+**What was done.** No credentials in the source; everything sensitive is read from the environment
+and `.env*` is gitignored. Both the browser and the server validate against the same Zod schema, and
+the server's check is the one that counts. Database access goes through Drizzle's parameterised
+queries. The admin area is gated by middleware on every `/admin` request, and the gate refuses
+everyone when `ADMIN_TOKEN` is unset rather than falling open. The session cookie is httpOnly,
+sameSite lax, and secure in production. Test data only; no real guest information was used at any
+point.
+
+**What is missing, and would matter in production.** These are stated plainly because a prototype
+that hides them is worse than one that does not have them.
+
+- The admin gate is one shared token, not authentication. There are no accounts and no roles, so it
+  cannot tell you who changed a lead. Anyone with the token has full access.
+- No rate limiting on the public form. Someone could submit repeatedly and run up API cost.
+- No CSRF protection beyond the framework defaults, and no bot protection on the form.
+- Guest contact details are stored in plain columns with no encryption at rest beyond whatever the
+  database provider gives, and there is no retention policy or deletion route.
+- No audit trail. A status change or a draft edit overwrites without recording who or when.
+- Enquiry text is sent to Anthropic's API. Real deployment needs that in a privacy notice, and a
+  data processing agreement.
+
+---
+
+## Known limitations
+
+- Availability is generated, not real. Times shown to a guest are not held, and two guests could be
+  offered the same slot.
+- The catalog is seven representative treatments, hardcoded. Real use needs it in a table the front
+  desk can edit without a deploy.
+- Nothing is sent. No email, no text, no calendar entry.
+- No duplicate detection. The same guest submitting twice creates two leads.
+- A failed automation is recorded but not retried.
+- The reading happens moments after submission, so a lead can briefly appear with no summary. The
+  dashboard says so rather than hiding it.
+- No pagination on the lead list, which is fine at prototype volume and would not be at a year's.
+- English only.
+
+---
+
+## What production would need
+
+Roughly in the order it would matter:
+
+1. **Real authentication.** Accounts, roles and an audit trail, so a manager and a receptionist do
+   not share one login.
+2. **Approve before send.** The draft already exists and is editable; the missing piece is the
+   button that sends it and the record that it was sent.
+3. **Live availability and booking.** Read from Booker/Mindbody, hold a slot rather than suggest
+   one.
+4. **A queue for outbound work,** so a failed email retries by itself.
+5. **The catalog and policies in the database**, editable by staff, with the prompt reading from
+   whatever is current.
+6. **Rate limiting and bot protection** on the public form.
+7. **Retention and deletion** for guest data, with the privacy notice to match.
+8. **Monitoring.** An alert when classifications start failing, rather than finding out from the
+   automation log.
+9. **Evaluation set.** Thirty or so real enquiries with the right answers written down, so a prompt
+   change can be checked rather than eyeballed.
+
+---
+
+## Estimated monthly cost in production
+
+Assuming a single spa at roughly 300 enquiries a month.
+
+| | | |
+|---|---|---|
+| Vercel | Pro | $20 |
+| Neon Postgres | Launch | $19 |
+| Anthropic API | ~300 enquiries at roughly $0.02 to $0.04 each | $6 to $12 |
+| Resend | free to 3,000 emails, then | $0 to $20 |
+| Twilio | only if texts are used, about $0.008 each | $0 to $5 |
+| Domain | amortised | $2 |
+| | | **about $50 to $80 a month** |
+
+The AI is the smallest line, which is worth saying out loud, because it is usually assumed to be
+the largest. Moving classification to a cheaper model would take that line under $5, at some cost
+in the quality of the drafts. It would be worth testing against the evaluation set above before
+deciding either way.
+
+Volume changes very little here. At a thousand enquiries a month the AI line is still under $40 and
+the hosting does not move.
