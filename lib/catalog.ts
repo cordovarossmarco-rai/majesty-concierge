@@ -96,6 +96,20 @@ export function findService(id: string | null): Service | null {
 }
 
 /**
+ * How long to assume a treatment will take, before anyone has decided which one it is.
+ *
+ * Appointment times have to be offered in the same breath as the recommendation, but the length of
+ * the treatment is not known until the recommendation exists. Taking the longest candidate means
+ * every slot on offer is long enough for whatever ends up being suggested. A slot that fits a half
+ * day also fits a facial; the reverse is not true, which is the whole reason this rounds up.
+ */
+export function longestDurationFor(category: string | null | undefined) {
+  const pool = category ? CATALOG.filter((s) => s.category === category) : [];
+  const services = pool.length > 0 ? pool : CATALOG;
+  return Math.max(...services.map((s) => s.durationMinutes));
+}
+
+/**
  * The only policies the assistant may state. Anything a guest asks that is not covered here has to
  * go to a person.
  */

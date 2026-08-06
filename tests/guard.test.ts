@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { applyGuards, type AiResult } from "../lib/guard";
+import type { Slot } from "../lib/availability";
 import type { TriageResult } from "../lib/triage";
 
 const clean: TriageResult = { forceEscalate: false, reason: null, mentionsGroupon: false };
@@ -17,7 +18,14 @@ const base: AiResult = {
   needsStaff: false,
   draftResponse: "Thanks for getting in touch.",
   nextAction: "continue_to_booking",
+  proposedSlots: [],
 };
+
+// Saturday, offered to a guest. Late enough in the day that a half day package would not finish.
+const offered: Slot[] = [
+  { id: "2026-08-15T10:00", date: "2026-08-15", time: "10:00", label: "Saturday 15 August, 10:00am" },
+  { id: "2026-08-15T16:00", date: "2026-08-15", time: "16:00", label: "Saturday 15 August, 4:00pm" },
+];
 
 describe("applyGuards", () => {
   it("drops a treatment the model invented and says so", () => {
@@ -62,5 +70,34 @@ describe("applyGuards", () => {
   it("stops sending a guest to online booking once a person needs to look at it", () => {
     const r = applyGuards({ ...base, needsStaff: true, nextAction: "continue_to_booking" }, clean, false);
     expect(r.nextAction).toBe("schedule_staff_callback");
+  });
+
+  it("keeps a time that was actually offered", () => {
+    const ai = { ...base, serviceInterest: "swedish-60", proposedSlots: ["2026-08-15T10:00"] };
+    const r = applyGuards(ai, clean, false, offered);
+    expect(r.slots.map((s) => s.id)).toEqual(["2026-08-15T10:00"]);
+    expect(r.needsStaff).toBe(false);
+  });
+
+  it("drops a time that was never on the list", () => {
+    const ai = { ...base, serviceInterest: "swedish-60", proposedSlots: ["2026-08-15T07:00"] };
+    const r = applyGuards(ai, clean, false, offered);
+    expect(r.slots).toEqual([]);
+  });
+
+  it("drops a time the treatment could not finish in", () => {
+    // The half day escape runs 210 minutes, so a 4pm start would run well past closing.
+    const ai = { ...base, serviceInterest: "half-day-escape", proposedSlots: ["2026-08-15T16:00"] };
+    const r = applyGuards(ai, clean, false, offered);
+    expect(r.slots).toEqual([]);
+    expect(r.needsStaff).toBe(true);
+    expect(r.escalationReason).toContain("too late in the day");
+  });
+
+  it("does not offer appointment times to someone raising a complaint", () => {
+    const ai = { ...base, serviceInterest: "swedish-60", proposedSlots: ["2026-08-15T10:00"] };
+    const r = applyGuards(ai, escalating, false, offered);
+    expect(r.slots).toEqual([]);
+    expect(r.escalationReason).toContain("withheld");
   });
 });

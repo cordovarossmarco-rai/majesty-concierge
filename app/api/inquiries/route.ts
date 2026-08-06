@@ -71,7 +71,7 @@ export async function POST(request: Request) {
     try {
       const t = triage(inquiry.message, inquiry.hasGroupon);
       const outcome = await classify(inquiry);
-      const guarded = applyGuards(outcome.result, t, inquiry.hasGroupon);
+      const guarded = applyGuards(outcome.result, t, inquiry.hasGroupon, outcome.offered);
 
       await db
         .insert(leadAi)
@@ -85,6 +85,7 @@ export async function POST(request: Request) {
           escalationReason: guarded.escalationReason,
           draftResponse: guarded.draftResponse,
           nextAction: guarded.nextAction,
+          proposedSlots: guarded.slots.length > 0 ? JSON.stringify(guarded.slots) : null,
           model: outcome.model,
         })
         // Re-reading an enquiry should replace the previous reading rather than fail on the
@@ -100,6 +101,7 @@ export async function POST(request: Request) {
             escalationReason: guarded.escalationReason,
             draftResponse: guarded.draftResponse,
             nextAction: guarded.nextAction,
+            proposedSlots: guarded.slots.length > 0 ? JSON.stringify(guarded.slots) : null,
             model: outcome.model,
           },
         });

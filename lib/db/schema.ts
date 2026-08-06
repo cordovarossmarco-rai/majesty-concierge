@@ -35,6 +35,9 @@ export const leadAi = pgTable("lead_ai", {
   escalationReason: text("escalation_reason"),
   draftResponse: text("draft_response").notNull(),
   nextAction: text("next_action").notNull(),
+  // The appointment times offered to this guest, as JSON. A separate table would be right if the
+  // spa were holding them; nothing is held here, so this stays a record of what was suggested.
+  proposedSlots: text("proposed_slots"),
   model: text("model").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
