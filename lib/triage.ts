@@ -17,7 +17,11 @@ const SENSITIVE: Pattern[] = [
   { label: "asks about a refund", test: /\brefund(s|ed)?\b|\bmoney back\b|\bcharged twice\b/i },
   { label: "reports dissatisfaction", test: /\bunhappy\b|\bdisappoint(ed|ing|ment)?\b|\bterrible\b|\bawful\b/i },
   { label: "mentions an allergy", test: /\baller(gy|gic|gies)\b/i },
-  { label: "reports a possible injury or reaction", test: /\b(burn|burned|burnt|injur(y|ed)|rash|bruis(e|ed|ing)|reaction|hurt)\b/i },
+  // Guests rarely use the word "reaction". They describe what they can see, so match that too.
+  {
+    label: "reports a possible injury or reaction",
+    test: /\b(burn|burned|burnt|injur(y|ed)|rash|bruis(e|ed|ing)|reaction|hurt|irritat(ed|ion|ing)|redness|swell(ing|ed|s)?|swollen|blister(s|ed|ing)?|itch(y|ing|ed)?|break(ing)? out|broke out|breakout)\b/i,
+  },
   { label: "raises a legal issue", test: /\blegal\b|\blawyer\b|\battorney\b|\bsue\b|\bsuing\b/i },
 ];
 

@@ -29,6 +29,22 @@ describe("triage", () => {
     expect(r.forceEscalate).toBe(true);
   });
 
+  // Nobody writes "I had an adverse reaction". They describe the skin, so those words have to match.
+  it.each([
+    "My skin has been red and irritated since Thursday",
+    "There is still redness across my cheeks two days later",
+    "My face was swollen the morning after",
+    "I have been itchy ever since the body polish",
+    "I broke out badly after the facial",
+  ])("escalates a reaction described in plain words: %s", (message) => {
+    expect(triage(message, false).forceEscalate).toBe(true);
+  });
+
+  it("does not escalate ordinary language that happens to sound similar", () => {
+    expect(triage("Do you have any openings this week for a hot stone massage?", false).forceEscalate).toBe(false);
+    expect(triage("I would like to book the sea salt body polish for Friday", false).forceEscalate).toBe(false);
+  });
+
   it("lists every reason when more than one applies", () => {
     const r = triage("I want a refund and I would like to speak to a manager", false);
     expect(r.reason).toContain("manager");
