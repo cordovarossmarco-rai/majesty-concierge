@@ -23,10 +23,10 @@ function href(current: Record<string, string | undefined>, change: Record<string
 export default async function Admin({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; priority?: string; q?: string }>;
+  searchParams: Promise<{ status?: string; priority?: string; q?: string; flagged?: string }>;
 }) {
   const params = await searchParams;
-  const { status, priority, q } = params;
+  const { status, priority, q, flagged } = params;
 
   const filters: SQL[] = [];
   if (status && STATUSES.includes(status as (typeof STATUSES)[number])) {
@@ -35,6 +35,9 @@ export default async function Admin({
   if (priority && PRIORITIES.includes(priority as (typeof PRIORITIES)[number])) {
     filters.push(eq(leadAi.priority, priority as (typeof PRIORITIES)[number]));
   }
+  // A complaint is not a hot lead, it is a general one that a person has to answer, so the
+  // priority filter will never find it. This is the filter the front desk actually needs.
+  if (flagged === "1") filters.push(eq(leadAi.needsStaff, true));
   if (q?.trim()) {
     const term = `%${q.trim()}%`;
     const match = or(
@@ -108,7 +111,13 @@ export default async function Admin({
             <FilterLink key={p} label={p} active={priority === p} to={href(params, { priority: p })} />
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-[13px] text-ink-soft">Attention</span>
+          <FilterLink label="Everything" active={flagged !== "1"} to={href(params, { flagged: undefined })} />
+          <FilterLink label="Needs a person" active={flagged === "1"} to={href(params, { flagged: "1" })} />
+        </div>
         <form action="/admin" className="flex flex-wrap gap-2">
+          {flagged === "1" && <input type="hidden" name="flagged" value="1" />}
           {status && <input type="hidden" name="status" value={status} />}
           {priority && <input type="hidden" name="priority" value={priority} />}
           <input

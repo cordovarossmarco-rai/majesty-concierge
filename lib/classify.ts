@@ -82,9 +82,13 @@ function systemPrompt(offered: Slot[]) {
           "These appointment times are free, and they are the only ones you may offer:",
           offered.map((s) => `- ${s.id} : ${s.label}`).join("\n"),
           "",
-          "Put the ids in proposedSlots and write the readable version into the draft. Offer at most",
-          "two, and offer none at all when the enquiry is a complaint or when you do not yet know",
-          "enough to suggest a treatment. Say that the time is held only once the spa confirms it.",
+          "Put the ids in proposedSlots and write those same times into the draft. Offer at most two,",
+          "and offer none at all when the enquiry is a complaint or when you do not yet know enough",
+          "to suggest a treatment. Say that the time is held only once the spa confirms it.",
+          "",
+          "The draft must name exactly the times in proposedSlots and no others. A time mentioned to",
+          "the guest but missing from proposedSlots leaves the front desk looking at a shorter list",
+          "than the guest was sent, which is how a spa double books itself.",
         ]
       : [
           "Nothing is free in the period you can see, so leave proposedSlots empty and say in the",
