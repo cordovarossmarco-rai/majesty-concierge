@@ -4,6 +4,7 @@ import { inquirySchema } from "@/lib/validation";
 import { triage } from "@/lib/triage";
 import { classify } from "@/lib/classify";
 import { applyGuards } from "@/lib/guard";
+import { recordClassification, runAutomations } from "@/lib/automations";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -102,6 +103,9 @@ export async function POST(request: Request) {
             model: outcome.model,
           },
         });
+
+      await recordClassification(leadId, outcome.model, outcome.failure);
+      await runAutomations(leadId, { firstName: inquiry.firstName, email: inquiry.email }, guarded);
     } catch (error) {
       // The lead is already saved, so the worst case here is an enquiry a person has to read
       // unaided. Say so in the log rather than failing quietly.
