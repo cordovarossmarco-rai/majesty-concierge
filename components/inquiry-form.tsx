@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { cloneElement, isValidElement, useState, type ReactElement, type ReactNode } from "react";
 import { inquirySchema, serviceCategories, type InquiryInput } from "@/lib/validation";
 
 const empty: InquiryInput = {
@@ -234,6 +234,13 @@ function Tile({
   );
 }
 
+/*
+  Wires the control to its own error message rather than leaving the two as unrelated elements on
+  the page. Without aria-invalid and aria-describedby a screen reader announces nothing when a
+  field fails: the message is read as ordinary text somewhere further down, if at all.
+
+  The props are cloned onto the control so every call site stays a plain input.
+*/
 function Field({ id, label: text, hint, error, children }: {
   id: string;
   label: string;
@@ -241,14 +248,26 @@ function Field({ id, label: text, hint, error, children }: {
   error?: string;
   children: ReactNode;
 }) {
+  const errorId = `${id}-error`;
+  const control = isValidElement(children)
+    ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": error ? errorId : undefined,
+      })
+    : children;
+
   return (
     <div data-field={id}>
       <label htmlFor={id} className={label}>
         {text}
         {hint && <span className="ml-2 font-normal text-ink-soft">{hint}</span>}
       </label>
-      {children}
-      {error && <p className="mt-1.5 text-[13px] text-ink">{error}</p>}
+      {control}
+      {error && (
+        <p id={errorId} role="alert" className="mt-2 text-[13px] text-[var(--danger)]">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

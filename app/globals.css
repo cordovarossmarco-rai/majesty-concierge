@@ -17,6 +17,8 @@
   --line-strong: rgb(34 28 20 / 0.3);
   --focus: #2d4f3c;
   --focus-ring: rgb(45 79 60 / 0.16);
+  --danger: #9a3324;
+  --danger-ring: rgb(154 51 36 / 0.16);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
   /* The glass tiles. Opaque enough that a long form stays readable over a photograph. */
@@ -43,6 +45,8 @@
     --line-strong: rgb(240 233 223 / 0.32);
     --focus: #8fbfa4;
     --focus-ring: rgb(143 191 164 / 0.2);
+    --danger: #e39b8b;
+    --danger-ring: rgb(227 155 139 / 0.2);
 
     --glass-bg: rgb(28 23 17 / 0.7);
     --glass-edge: rgb(240 233 223 / 0.16);
@@ -79,7 +83,7 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background-image: linear-gradient(rgb(236 229 218 / 0.55), rgb(236 229 218 / 0.7)),
+  background-image: linear-gradient(rgb(236 229 218 / 0.28), rgb(236 229 218 / 0.42)),
     url("/images/plaster.jpg");
   background-size: cover;
   background-position: center;
@@ -87,7 +91,7 @@ body {
 
 @media (prefers-color-scheme: dark) {
   .page-ground {
-    background-image: linear-gradient(rgb(23 19 14 / 0.82), rgb(23 19 14 / 0.9)),
+    background-image: linear-gradient(rgb(23 19 14 / 0.7), rgb(23 19 14 / 0.82)),
       url("/images/plaster.jpg");
   }
 }
@@ -161,6 +165,14 @@ body {
 :where(input, select, textarea):focus {
   border-color: var(--line-strong);
   box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+:where(input, select, textarea)[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
+:where(input, select, textarea)[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 3px var(--danger-ring);
 }
 
 @keyframes rise {
