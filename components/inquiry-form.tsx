@@ -25,8 +25,10 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 // One field style, one label style. Repeating these inline is how two inputs end up a pixel apart.
+// Fields are translucent so they read as part of the glass panel rather than white cards
+// floating on it. The token carries the light and dark values.
 const field =
-  "w-full bg-paper-raised border border-line px-3.5 py-3 text-[15px] text-ink " +
+  "w-full bg-[var(--field-bg)] border border-line px-3.5 py-3 text-[15px] text-ink " +
   "placeholder:text-ink-soft/60 transition-[border-color,box-shadow] duration-200 " +
   "hover:border-line-strong";
 const label = "block text-[13px] font-medium tracking-[0.01em] text-ink mb-2";
@@ -70,7 +72,7 @@ export function InquiryForm() {
 
   if (state === "sent") {
     return (
-      <div className="rise border border-line bg-paper-raised px-7 py-12 sm:px-12 sm:py-14">
+      <div className="rise">
         <h2 className="font-display text-[2rem] leading-tight font-light sm:text-[2.5rem]">
           Thank you, {values.firstName}.
         </h2>

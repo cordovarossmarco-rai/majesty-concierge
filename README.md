@@ -262,6 +262,12 @@ that hides them is worse than one that does not have them.
 
 ## Known limitations
 
+- The photographs are placeholders chosen to set the tone, not licensed assets. Real use needs the
+  spa's own photography or properly licensed images, and the background in particular wants a
+  higher resolution file than the one used here.
+- The frosted panel is a CSS approximation of glass, not Apple's Liquid Glass, which is documented
+  for Apple platforms and has no web implementation. It falls back to a solid surface where the
+  browser cannot blur or the reader has asked for less transparency.
 - Availability is generated, not real. Times shown to a guest are not held, and two guests could be
   offered the same slot.
 - The catalog is seven representative treatments, hardcoded. Real use needs it in a table the front

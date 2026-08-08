@@ -1,38 +1,49 @@
 @import "tailwindcss";
 
 /*
-  Forest palette. Deliberately not the warm cream and brass that every spa site reaches for,
-  which reads as generic wellness rather than as this spa. Deep green against a cool off-white,
-  one accent, used everywhere.
+  The page sits on a photograph of a plaster wall, so the palette is warm stone rather than the
+  cool off-white it used to be. Deep forest stays as the single accent: green against sand is the
+  combination the room itself is built from, and it keeps the page from becoming another
+  beige-on-beige wellness site.
 */
 :root {
-  --paper: #f7f8f7;
+  --paper: #ece5da;
   --paper-raised: #ffffff;
-  --ink: #14201a;
-  --ink-soft: #4a5852;
+  --ink: #221c14;
+  --ink-soft: #5d5347;
   --accent: #2d4f3c;
   --accent-hover: #24402f;
-  --line: rgb(20 32 26 / 0.12);
-  --line-strong: rgb(20 32 26 / 0.26);
+  --line: rgb(34 28 20 / 0.14);
+  --line-strong: rgb(34 28 20 / 0.3);
   --focus: #2d4f3c;
-  --focus-ring: rgb(45 79 60 / 0.14);
-  /* One easing curve everywhere, so nothing on the page moves in a different accent. */
+  --focus-ring: rgb(45 79 60 / 0.16);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* The glass panel. Opaque enough that a long form stays readable over a photograph. */
+  --glass-bg: rgb(255 255 255 / 0.82);
+  --glass-edge: rgb(255 255 255 / 0.55);
+  --glass-shadow: 0 24px 70px -28px rgb(34 28 20 / 0.45);
+  --field-bg: rgb(255 255 255 / 0.72);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #101613;
-    --paper-raised: #161e1a;
-    --ink: #e8ece9;
-    --ink-soft: #9aa8a1;
+    --paper: #17130e;
+    --paper-raised: #1e1913;
+    --ink: #f0e9df;
+    --ink-soft: #a89b8a;
     /* Lifted well above the light-mode green so it still passes contrast on a dark ground. */
     --accent: #8fbfa4;
     --accent-hover: #a4cfb6;
-    --line: rgb(232 236 233 / 0.14);
-    --line-strong: rgb(232 236 233 / 0.3);
+    --line: rgb(240 233 223 / 0.16);
+    --line-strong: rgb(240 233 223 / 0.32);
     --focus: #8fbfa4;
-    --focus-ring: rgb(143 191 164 / 0.18);
+    --focus-ring: rgb(143 191 164 / 0.2);
+
+    --glass-bg: rgb(24 20 15 / 0.78);
+    --glass-edge: rgb(240 233 223 / 0.14);
+    --glass-shadow: 0 24px 70px -28px rgb(0 0 0 / 0.7);
+    --field-bg: rgb(240 233 223 / 0.07);
   }
 }
 
@@ -53,20 +64,60 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
-  /*
-    A single soft wash rather than a flat fill. It is barely visible and that is the point: the
-    page reads as a surface with light on it instead of a browser default.
-  */
-  background-image: radial-gradient(120% 90% at 50% -10%, rgb(45 79 60 / 0.05), transparent 60%);
-  background-attachment: fixed;
 }
 
 /*
-  Cormorant sets loose by default and needs pulling in to read as considered. This lives in the
-  base layer on purpose: unlayered it would outrank Tailwind's own tracking utilities, and the
-  letterspaced eyebrow above the heading would silently lose its spacing.
+  The plaster photograph is small, so it is scaled up and deliberately held slightly soft with a
+  wash over it. It is a texture rather than a subject, which is what makes that survivable.
 */
+.page-ground {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image: linear-gradient(rgb(236 229 218 / 0.55), rgb(236 229 218 / 0.7)),
+    url("/images/plaster.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+@media (prefers-color-scheme: dark) {
+  .page-ground {
+    background-image: linear-gradient(rgb(23 19 14 / 0.82), rgb(23 19 14 / 0.9)),
+      url("/images/plaster.jpg");
+  }
+}
+
+/*
+  An approximation of frosted glass, not Apple's Liquid Glass, which is documented for Apple
+  platforms and has no web implementation. Blur plus saturation plus a lit top edge is what sells
+  it. The fallbacks below matter more than the effect: if a browser cannot blur, or the reader has
+  asked for less transparency, the panel becomes solid rather than becoming unreadable.
+*/
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    inset 0 1px 0 0 rgb(255 255 255 / 0.6),
+    var(--glass-shadow);
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass {
+    background: var(--paper-raised);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
 @layer base {
+  /* Cormorant sets loose by default and needs pulling in to read as considered. */
   .font-display {
     letter-spacing: -0.015em;
   }
@@ -74,7 +125,7 @@ body {
 
 ::selection {
   background: var(--accent);
-  color: var(--paper-raised);
+  color: #fff;
 }
 
 /* One focus treatment everywhere rather than per-component rings that drift apart. */
@@ -83,10 +134,6 @@ body {
   outline-offset: 2px;
 }
 
-/*
-  Fields get the ring on focus as well as the border change, because a border shift alone is easy
-  to miss on a page this quiet.
-*/
 :where(input, select, textarea):focus {
   border-color: var(--line-strong);
   box-shadow: 0 0 0 3px var(--focus-ring);
@@ -95,7 +142,7 @@ body {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -104,10 +151,9 @@ body {
 }
 
 .rise {
-  animation: rise 0.6s var(--ease) both;
+  animation: rise 0.7s var(--ease) both;
 }
 
-/* Anyone who has asked for less movement gets none of it. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
