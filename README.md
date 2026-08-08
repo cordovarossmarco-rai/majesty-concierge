@@ -176,7 +176,7 @@ than four.
 
 | Step | What it does | When it skips |
 |---|---|---|
-| `confirmation_email` | Prepares an acknowledgement for the guest | Held back when the enquiry goes to a manager, so a complaint is not answered by an autoresponder |
+| `confirmation` | Prepares an acknowledgement, by email, text or call, whichever the guest asked for | Held back when the enquiry goes to a manager, so a complaint is not answered by an autoresponder |
 | `hot_lead_notification` | Tells the front desk | When the priority is not hot |
 | `followup_task` | Creates a task with the escalation reason | When nothing needs a person |
 | `crm_sync` | Upserts the guest and enquiry | Does not skip |
@@ -195,7 +195,7 @@ function; the logging, the skip conditions and the failure handling stay as they
 
 | Step | Live version |
 |---|---|
-| `confirmation_email` | Resend or Postmark. Send the edited draft, triggered by a staff member approving it in the dashboard rather than automatically on submit. |
+| `confirmation` | Resend or Postmark for email, Twilio for text. The step already branches on the guest's stated preference, so the live version swaps the body for a real send, triggered by a staff member approving the draft rather than automatically on submit. |
 | Text messages | Twilio, gated on `contactMethod` being `text` and on the same approval. |
 | `hot_lead_notification` | Slack incoming webhook, or Twilio for a text to the duty manager out of hours. |
 | `followup_task` | Whatever the spa already uses. A Booker/Mindbody task if their plan exposes one, otherwise a shared inbox or a Trello card via webhook. |

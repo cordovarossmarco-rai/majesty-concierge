@@ -55,16 +55,24 @@ export async function recordClassification(leadId: string, model: string, failur
   );
 }
 
-type Recipient = { firstName: string; email: string };
+type Recipient = { firstName: string; email: string; phone: string; contactMethod: string };
 
 export async function runAutomations(leadId: string, guest: Recipient, ai: GuardedResult) {
-  await step(leadId, "confirmation_email", () => {
+  await step(leadId, "confirmation", () => {
     // A guest who has complained should hear from a manager, not from an acknowledgement that
     // reads as though nobody noticed what they wrote.
     if (ai.nextAction === "escalate_to_management") {
       return { skipped: "Held back so a manager makes contact first." };
     }
-    return `Simulated. Draft acknowledgement prepared for ${guest.email}. Nothing is sent until a staff member approves it.`;
+    // The form asks how they want to be reached, so the acknowledgement goes that way. Sending an
+    // email to someone who asked to be texted is a small thing that reads as not having listened.
+    const channel =
+      guest.contactMethod === "email"
+        ? `an email to ${guest.email}`
+        : guest.contactMethod === "text"
+          ? `a text to ${guest.phone}`
+          : `a call to ${guest.phone}`;
+    return `Simulated. Draft acknowledgement prepared as ${channel}, which is how they asked to be reached. Nothing is sent until a staff member approves it.`;
   });
 
   await step(leadId, "hot_lead_notification", () => {

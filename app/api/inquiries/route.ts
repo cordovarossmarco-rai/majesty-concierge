@@ -107,7 +107,16 @@ export async function POST(request: Request) {
         });
 
       await recordClassification(leadId, outcome.model, outcome.failure);
-      await runAutomations(leadId, { firstName: inquiry.firstName, email: inquiry.email }, guarded);
+      await runAutomations(
+        leadId,
+        {
+          firstName: inquiry.firstName,
+          email: inquiry.email,
+          phone: inquiry.phone,
+          contactMethod: inquiry.contactMethod,
+        },
+        guarded,
+      );
     } catch (error) {
       // The lead is already saved, so the worst case here is an enquiry a person has to read
       // unaided. Say so in the log rather than failing quietly.
