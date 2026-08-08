@@ -19,11 +19,15 @@
   --focus-ring: rgb(45 79 60 / 0.16);
   --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
-  /* The glass panel. Opaque enough that a long form stays readable over a photograph. */
-  --glass-bg: rgb(255 255 255 / 0.82);
-  --glass-edge: rgb(255 255 255 / 0.55);
-  --glass-shadow: 0 24px 70px -28px rgb(34 28 20 / 0.45);
-  --field-bg: rgb(255 255 255 / 0.72);
+  /* The glass tiles. Opaque enough that a long form stays readable over a photograph. */
+  --glass-bg: rgb(255 255 255 / 0.72);
+  --glass-edge: rgb(255 255 255 / 0.6);
+  --glass-sheen: rgb(255 255 255 / 0.45);
+  --glass-shadow: 0 20px 50px -24px rgb(34 28 20 / 0.4);
+  --field-bg: rgb(255 255 255 / 0.6);
+  /* One radius scale. Tiles, fields, then anything you press. */
+  --r-tile: 24px;
+  --r-field: 12px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -40,10 +44,11 @@
     --focus: #8fbfa4;
     --focus-ring: rgb(143 191 164 / 0.2);
 
-    --glass-bg: rgb(24 20 15 / 0.78);
-    --glass-edge: rgb(240 233 223 / 0.14);
-    --glass-shadow: 0 24px 70px -28px rgb(0 0 0 / 0.7);
-    --field-bg: rgb(240 233 223 / 0.07);
+    --glass-bg: rgb(28 23 17 / 0.7);
+    --glass-edge: rgb(240 233 223 / 0.16);
+    --glass-sheen: rgb(240 233 223 / 0.1);
+    --glass-shadow: 0 20px 50px -24px rgb(0 0 0 / 0.65);
+    --field-bg: rgb(240 233 223 / 0.08);
   }
 }
 
@@ -89,16 +94,35 @@ body {
 
 /*
   An approximation of frosted glass, not Apple's Liquid Glass, which is documented for Apple
-  platforms and has no web implementation. Blur plus saturation plus a lit top edge is what sells
-  it. The fallbacks below matter more than the effect: if a browser cannot blur, or the reader has
-  asked for less transparency, the panel becomes solid rather than becoming unreadable.
+  platforms and has no web implementation. Three things sell it: blur with saturation so colour
+  behind the tile bleeds through, a lit top edge, and a sheen falling off down the surface.
+
+  The fallbacks below matter more than the effect. If a browser cannot blur, or the reader has
+  asked for less transparency, the tile becomes solid rather than becoming unreadable.
 */
 .glass {
+  position: relative;
+  border-radius: var(--r-tile);
   background: var(--glass-bg);
   border: 1px solid var(--glass-edge);
   box-shadow:
-    inset 0 1px 0 0 rgb(255 255 255 / 0.6),
+    inset 0 1px 0 0 var(--glass-sheen),
     var(--glass-shadow);
+}
+
+/* The specular fall-off. Sits above the tile's own background, below its content. */
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(180deg, var(--glass-sheen), transparent 45%);
+  opacity: 0.6;
+}
+
+.glass > * {
+  position: relative;
 }
 
 @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
