@@ -25,19 +25,37 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 /*
-  One field style, one label style. Repeating these inline is how two inputs end up a pixel apart.
-  Fields are translucent so they read as part of the tile rather than white cards floating on it,
-  and they share the one radius scale defined alongside the tiles.
+  What the guest wants comes first, their contact details second.
+
+  Collecting the phone number up front is the obvious order and the wrong one: asking for it before
+  someone has said what they came for reads as a toll gate. Describing the treatment they want is
+  the part a guest is actually motivated to do, and having done it they tend to finish the rest.
 */
+const stepOneSchema = inquirySchema.pick({
+  serviceCategory: true,
+  preferredDate: true,
+  preferredTime: true,
+  message: true,
+  hasGroupon: true,
+});
+
+const STEP_ONE_FIELDS = ["serviceCategory", "preferredDate", "preferredTime", "message", "hasGroupon"];
+
 const field =
   "w-full rounded-[var(--r-field)] bg-[var(--field-bg)] border border-line px-3.5 py-3 " +
   "text-[15px] text-ink placeholder:text-ink-soft/60 hover:border-line-strong " +
   "transition-[border-color,box-shadow] duration-200";
 const label = "block text-[13px] font-medium tracking-[0.01em] text-ink mb-2";
 
+const primaryButton =
+  "rounded-full bg-accent px-8 py-3 text-[15px] font-medium tracking-[0.01em] text-white " +
+  "transition-all duration-200 hover:bg-accent-hover active:translate-y-px " +
+  "disabled:cursor-not-allowed disabled:opacity-55";
+
 export function InquiryForm() {
   const [values, setValues] = useState<InquiryInput>(empty);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [step, setStep] = useState<1 | 2>(1);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   function set<K extends keyof InquiryInput>(key: K, value: InquiryInput[K]) {
@@ -45,17 +63,41 @@ export function InquiryForm() {
     if (errors[key]) setErrors((e) => ({ ...e, [key]: "" }));
   }
 
+  function showErrors(issues: readonly { path: readonly PropertyKey[]; message: string }[]) {
+    const next: Record<string, string> = {};
+    for (const issue of issues) next[String(issue.path[0])] = issue.message;
+    setErrors(next);
+    document
+      .querySelector<HTMLElement>(`[data-field="${Object.keys(next)[0]}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    return next;
+  }
+
+  /*
+    One submit handler for both steps, so pressing Enter advances on the first screen and sends on
+    the second rather than doing whichever the browser decides.
+  */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (step === 1) {
+      const parsed = stepOneSchema.safeParse(values);
+      if (!parsed.success) {
+        showErrors(parsed.error.issues);
+        return;
+      }
+      setErrors({});
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     const parsed = inquirySchema.safeParse(values);
     if (!parsed.success) {
-      const next: Record<string, string> = {};
-      for (const issue of parsed.error.issues) next[String(issue.path[0])] = issue.message;
-      setErrors(next);
-      // Put the first problem in view rather than leaving them to hunt for it.
-      document
-        .querySelector<HTMLElement>(`[data-field="${Object.keys(next)[0]}"]`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      const shown = showErrors(parsed.error.issues);
+      // A problem belonging to the first screen has to be shown there, or the guest is looking at
+      // an error for a field they cannot see.
+      if (Object.keys(shown).some((k) => STEP_ONE_FIELDS.includes(k))) setStep(1);
       return;
     }
 
@@ -71,6 +113,12 @@ export function InquiryForm() {
     } catch {
       setState("error");
     }
+  }
+
+  function back() {
+    setErrors({});
+    setStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   if (state === "sent") {
@@ -94,120 +142,225 @@ export function InquiryForm() {
   const busy = state === "sending";
 
   return (
-    <form onSubmit={submit} noValidate className="grid gap-4 sm:gap-5 lg:grid-cols-2">
-      <Tile title="Your details" className="rise">
-        <fieldset disabled={busy} className="space-y-5">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="firstName" label="First name" error={errors.firstName}>
-              <input id="firstName" className={field} value={values.firstName}
-                onChange={(e) => set("firstName", e.target.value)} autoComplete="given-name" />
-            </Field>
-            <Field id="lastName" label="Last name" error={errors.lastName}>
-              <input id="lastName" className={field} value={values.lastName}
-                onChange={(e) => set("lastName", e.target.value)} autoComplete="family-name" />
-            </Field>
-          </div>
+    <form onSubmit={submit} noValidate>
+      <Progress step={step} />
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="phone" label="Phone" error={errors.phone}>
-              <input id="phone" type="tel" className={field} value={values.phone}
-                onChange={(e) => set("phone", e.target.value)} autoComplete="tel" />
-            </Field>
-            <Field id="email" label="Email" error={errors.email}>
-              <input id="email" type="email" className={field} value={values.email}
-                onChange={(e) => set("email", e.target.value)} autoComplete="email" />
-            </Field>
-          </div>
+      {step === 1 ? (
+        <div className="space-y-4 sm:space-y-5">
+          <Tile title="What you are looking for" className="rise">
+            <fieldset disabled={busy} className="space-y-5">
+              <Field
+                id="serviceCategory"
+                label="Type of treatment"
+                hint="Optional, we can help you choose"
+              >
+                <select
+                  id="serviceCategory"
+                  className={field}
+                  value={values.serviceCategory ?? ""}
+                  onChange={(e) =>
+                    set(
+                      "serviceCategory",
+                      (e.target.value || undefined) as InquiryInput["serviceCategory"],
+                    )
+                  }
+                >
+                  <option value="">Not sure yet</option>
+                  {serviceCategories.map((c) => (
+                    <option key={c} value={c}>
+                      {CATEGORY_LABEL[c] ?? c}
+                    </option>
+                  ))}
+                </select>
+              </Field>
 
-          <Field id="heardAbout" label="How did you hear about us" hint="Optional">
-            <input id="heardAbout" className={field} value={values.heardAbout ?? ""}
-              onChange={(e) => set("heardAbout", e.target.value)} />
-          </Field>
-        </fieldset>
-      </Tile>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="preferredDate" label="Preferred date" hint="Optional">
+                  <input
+                    id="preferredDate"
+                    type="date"
+                    className={field}
+                    value={values.preferredDate ?? ""}
+                    onChange={(e) => set("preferredDate", e.target.value)}
+                  />
+                </Field>
+                <Field id="preferredTime" label="Preferred time" hint="Optional">
+                  <input
+                    id="preferredTime"
+                    type="time"
+                    className={field}
+                    value={values.preferredTime ?? ""}
+                    onChange={(e) => set("preferredTime", e.target.value)}
+                  />
+                </Field>
+              </div>
 
-      <Tile title="What you are looking for" className="rise" delay="70ms">
-        <fieldset disabled={busy} className="space-y-5">
-          <Field id="serviceCategory" label="Type of treatment" hint="Optional, we can help you choose">
-            <select id="serviceCategory" className={field} value={values.serviceCategory ?? ""}
-              onChange={(e) =>
-                set("serviceCategory", (e.target.value || undefined) as InquiryInput["serviceCategory"])
-              }>
-              <option value="">Not sure yet</option>
-              {serviceCategories.map((c) => (
-                <option key={c} value={c}>{CATEGORY_LABEL[c] ?? c}</option>
-              ))}
-            </select>
-          </Field>
+              <label className="flex cursor-pointer items-start gap-3 text-[15px]">
+                <input
+                  type="checkbox"
+                  checked={values.hasGroupon}
+                  onChange={(e) => set("hasGroupon", e.target.checked)}
+                  className="mt-1 h-4 w-4 accent-accent"
+                />
+                <span>I have a Groupon voucher</span>
+              </label>
+            </fieldset>
+          </Tile>
 
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field id="preferredDate" label="Preferred date" hint="Optional">
-              <input id="preferredDate" type="date" className={field} value={values.preferredDate ?? ""}
-                onChange={(e) => set("preferredDate", e.target.value)} />
-            </Field>
-            <Field id="preferredTime" label="Preferred time" hint="Optional">
-              <input id="preferredTime" type="time" className={field} value={values.preferredTime ?? ""}
-                onChange={(e) => set("preferredTime", e.target.value)} />
-            </Field>
-          </div>
+          <Tile title="In your own words" className="rise" delay="70ms">
+            <fieldset disabled={busy}>
+              <Field id="message" label="Tell us what you need" error={errors.message}>
+                <textarea
+                  id="message"
+                  rows={6}
+                  className={field}
+                  value={values.message}
+                  onChange={(e) => set("message", e.target.value)}
+                  placeholder="What you are hoping for, anything we should know, and when you would like to come in."
+                />
+              </Field>
+            </fieldset>
+          </Tile>
 
-          <label className="flex cursor-pointer items-start gap-3 text-[15px]">
-            <input type="checkbox" checked={values.hasGroupon}
-              onChange={(e) => set("hasGroupon", e.target.checked)}
-              className="mt-1 h-4 w-4 accent-accent" />
-            <span>I have a Groupon voucher</span>
-          </label>
-        </fieldset>
-      </Tile>
-
-      <Tile title="Tell us what you need" className="rise lg:col-span-2" delay="140ms">
-        <fieldset disabled={busy}>
-          <Field id="message" label="In your own words" error={errors.message}>
-            <textarea id="message" rows={5} className={field} value={values.message}
-              onChange={(e) => set("message", e.target.value)}
-              placeholder="What you are hoping for, anything we should know, and when you would like to come in." />
-          </Field>
-        </fieldset>
-      </Tile>
-
-      <Tile className="rise lg:col-span-2" delay="210ms">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          {/* legend has to be the first child of its own fieldset, so the button sits outside it */}
-          <fieldset disabled={busy}>
-            <legend className={label}>How should we reach you</legend>
-            <div className="flex flex-wrap gap-2">
-              {(["phone", "text", "email"] as const).map((m) => (
-                <label key={m}
-                  className={`cursor-pointer rounded-full border px-5 py-2.5 text-[15px] capitalize transition-all duration-200 ${
-                    values.contactMethod === m
-                      ? "border-accent bg-accent text-white shadow-sm"
-                      : "border-line bg-[var(--field-bg)] text-ink hover:border-line-strong"
-                  }`}>
-                  <input type="radio" name="contactMethod" value={m} className="sr-only"
-                    checked={values.contactMethod === m}
-                    onChange={() => set("contactMethod", m)} />
-                  {m}
-                </label>
-              ))}
+          <Tile className="rise" delay="140ms">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-[13px] text-ink-soft">Your details come next.</p>
+              <button type="submit" className={primaryButton}>
+                Next
+              </button>
             </div>
-          </fieldset>
-
-          <button type="submit" disabled={busy}
-            className="w-full rounded-full bg-accent px-8 py-3.5 text-[15px] font-medium
-              tracking-[0.01em] text-white transition-all duration-200 hover:bg-accent-hover
-              active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 sm:w-auto">
-            {busy ? "Sending" : "Send enquiry"}
-          </button>
+          </Tile>
         </div>
-      </Tile>
+      ) : (
+        <div className="space-y-4 sm:space-y-5">
+          <Tile title="How we reach you" className="rise">
+            <fieldset disabled={busy} className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="firstName" label="First name" error={errors.firstName}>
+                  <input
+                    id="firstName"
+                    className={field}
+                    value={values.firstName}
+                    onChange={(e) => set("firstName", e.target.value)}
+                    autoComplete="given-name"
+                  />
+                </Field>
+                <Field id="lastName" label="Last name" error={errors.lastName}>
+                  <input
+                    id="lastName"
+                    className={field}
+                    value={values.lastName}
+                    onChange={(e) => set("lastName", e.target.value)}
+                    autoComplete="family-name"
+                  />
+                </Field>
+              </div>
 
-      {state === "error" && (
-        <p role="alert"
-          className="glass lg:col-span-2 px-5 py-4 text-[14px]">
-          Something went wrong sending that. Please try again, or call the spa directly.
-        </p>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <Field id="phone" label="Phone" error={errors.phone}>
+                  <input
+                    id="phone"
+                    type="tel"
+                    className={field}
+                    value={values.phone}
+                    onChange={(e) => set("phone", e.target.value)}
+                    autoComplete="tel"
+                  />
+                </Field>
+                <Field id="email" label="Email" error={errors.email}>
+                  <input
+                    id="email"
+                    type="email"
+                    className={field}
+                    value={values.email}
+                    onChange={(e) => set("email", e.target.value)}
+                    autoComplete="email"
+                  />
+                </Field>
+              </div>
+
+              <Field id="heardAbout" label="How did you hear about us" hint="Optional">
+                <input
+                  id="heardAbout"
+                  className={field}
+                  value={values.heardAbout ?? ""}
+                  onChange={(e) => set("heardAbout", e.target.value)}
+                />
+              </Field>
+            </fieldset>
+          </Tile>
+
+          <Tile className="rise" delay="70ms">
+            <fieldset disabled={busy}>
+              <legend className={label}>How should we reach you</legend>
+              <div className="flex flex-wrap gap-2">
+                {(["phone", "text", "email"] as const).map((m) => (
+                  <label
+                    key={m}
+                    className={`cursor-pointer rounded-full border px-5 py-2.5 text-[15px] capitalize transition-all duration-200 ${
+                      values.contactMethod === m
+                        ? "border-accent bg-accent text-white shadow-sm"
+                        : "border-line bg-[var(--field-bg)] text-ink hover:border-line-strong"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="contactMethod"
+                      value={m}
+                      className="sr-only"
+                      checked={values.contactMethod === m}
+                      onChange={() => set("contactMethod", m)}
+                    />
+                    {m}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+          </Tile>
+
+          {state === "error" && (
+            <p role="alert" className="glass px-5 py-4 text-[14px] text-[var(--danger)]">
+              Something went wrong sending that. Please try again, or call the spa directly.
+            </p>
+          )}
+
+          <Tile className="rise" delay="140ms">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <button
+                type="button"
+                onClick={back}
+                disabled={busy}
+                className="rounded-full border border-line px-6 py-3 text-[15px] text-ink transition-colors duration-200 hover:border-line-strong disabled:opacity-55"
+              >
+                Back
+              </button>
+              <button type="submit" disabled={busy} className={primaryButton}>
+                {busy ? "Sending" : "Send enquiry"}
+              </button>
+            </div>
+          </Tile>
+        </div>
       )}
     </form>
+  );
+}
+
+/** Two steps is short, but a guest still needs to know it is two and not seven. */
+function Progress({ step }: { step: 1 | 2 }) {
+  return (
+    <div className="mb-4 flex items-center gap-4 px-1 sm:mb-5">
+      <span className="text-[12px] font-semibold tracking-[0.14em] text-ink-soft uppercase">
+        Step {step} of 2
+      </span>
+      <span className="flex flex-1 gap-1.5" aria-hidden>
+        <span className="h-[3px] flex-1 rounded-full bg-accent" />
+        <span
+          className={`h-[3px] flex-1 rounded-full transition-colors duration-500 ${
+            step === 2 ? "bg-accent" : "bg-line"
+          }`}
+        />
+      </span>
+    </div>
   );
 }
 
@@ -223,7 +376,10 @@ function Tile({
   delay?: string;
 }) {
   return (
-    <section className={`glass px-6 py-7 sm:px-8 sm:py-8 ${className}`} style={delay ? { animationDelay: delay } : undefined}>
+    <section
+      className={`glass px-6 py-7 sm:px-8 sm:py-8 ${className}`}
+      style={delay ? { animationDelay: delay } : undefined}
+    >
       {title && (
         <h2 className="mb-6 text-[12px] font-semibold tracking-[0.14em] text-ink-soft uppercase">
           {title}
@@ -238,10 +394,14 @@ function Tile({
   Wires the control to its own error message rather than leaving the two as unrelated elements on
   the page. Without aria-invalid and aria-describedby a screen reader announces nothing when a
   field fails: the message is read as ordinary text somewhere further down, if at all.
-
-  The props are cloned onto the control so every call site stays a plain input.
 */
-function Field({ id, label: text, hint, error, children }: {
+function Field({
+  id,
+  label: text,
+  hint,
+  error,
+  children,
+}: {
   id: string;
   label: string;
   hint?: string;

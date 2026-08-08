@@ -5,7 +5,7 @@ export default function Home() {
     <>
       <div className="page-ground" aria-hidden />
 
-      <main className="mx-auto w-full max-w-[1120px] px-5 py-12 sm:px-8 sm:py-16">
+      <main className="mx-auto w-full max-w-[760px] px-5 py-12 sm:px-8 sm:py-16">
         <header className="rise mb-8 px-1 sm:mb-10">
           <p className="font-display text-[13px] tracking-[0.3em] text-ink-soft uppercase">
             Majesty Day Spa
