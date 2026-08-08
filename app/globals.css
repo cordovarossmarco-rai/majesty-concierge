@@ -6,15 +6,18 @@
   one accent, used everywhere.
 */
 :root {
-  --paper: #fafafa;
+  --paper: #f7f8f7;
   --paper-raised: #ffffff;
   --ink: #14201a;
   --ink-soft: #4a5852;
   --accent: #2d4f3c;
   --accent-hover: #24402f;
-  --line: rgb(20 32 26 / 0.14);
-  --line-strong: rgb(20 32 26 / 0.28);
+  --line: rgb(20 32 26 / 0.12);
+  --line-strong: rgb(20 32 26 / 0.26);
   --focus: #2d4f3c;
+  --focus-ring: rgb(45 79 60 / 0.14);
+  /* One easing curve everywhere, so nothing on the page moves in a different accent. */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,9 +29,10 @@
     /* Lifted well above the light-mode green so it still passes contrast on a dark ground. */
     --accent: #8fbfa4;
     --accent-hover: #a4cfb6;
-    --line: rgb(232 236 233 / 0.16);
-    --line-strong: rgb(232 236 233 / 0.32);
+    --line: rgb(232 236 233 / 0.14);
+    --line-strong: rgb(232 236 233 / 0.3);
     --focus: #8fbfa4;
+    --focus-ring: rgb(143 191 164 / 0.18);
   }
 }
 
@@ -49,10 +53,68 @@ body {
   background: var(--paper);
   color: var(--ink);
   font-family: var(--font-body), system-ui, sans-serif;
+  /*
+    A single soft wash rather than a flat fill. It is barely visible and that is the point: the
+    page reads as a surface with light on it instead of a browser default.
+  */
+  background-image: radial-gradient(120% 90% at 50% -10%, rgb(45 79 60 / 0.05), transparent 60%);
+  background-attachment: fixed;
+}
+
+/*
+  Cormorant sets loose by default and needs pulling in to read as considered. This lives in the
+  base layer on purpose: unlayered it would outrank Tailwind's own tracking utilities, and the
+  letterspaced eyebrow above the heading would silently lose its spacing.
+*/
+@layer base {
+  .font-display {
+    letter-spacing: -0.015em;
+  }
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--paper-raised);
 }
 
 /* One focus treatment everywhere rather than per-component rings that drift apart. */
-:where(input, select, textarea, button, a):focus-visible {
+:where(input, select, textarea, button, a, [tabindex]):focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+}
+
+/*
+  Fields get the ring on focus as well as the border change, because a border shift alone is easy
+  to miss on a page this quiet.
+*/
+:where(input, select, textarea):focus {
+  border-color: var(--line-strong);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.6s var(--ease) both;
+}
+
+/* Anyone who has asked for less movement gets none of it. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

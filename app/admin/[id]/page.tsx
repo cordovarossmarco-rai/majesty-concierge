@@ -242,7 +242,7 @@ function Detail({ label, value }: { label: string; value: string | null | undefi
   return (
     <div>
       <dt className="text-[13px] text-ink-soft">{label}</dt>
-      <dd className="mt-0.5">{value || <span className="text-ink-soft">—</span>}</dd>
+      <dd className="mt-0.5">{value || <span className="text-ink-soft">–</span>}</dd>
     </div>
   );
 }

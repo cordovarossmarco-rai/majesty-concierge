@@ -29,7 +29,7 @@ export function Pill({ tone = "quiet", children }: { tone?: Tone; children: Reac
 }
 
 export function PriorityPill({ priority }: { priority: string | null }) {
-  if (!priority) return <span className="text-ink-soft">—</span>;
+  if (!priority) return <span className="text-ink-soft">–</span>;
   const tone = priority === "hot" ? "hot" : priority === "warm" ? "warm" : "general";
   return <Pill tone={tone}>{priority}</Pill>;
 }
@@ -44,7 +44,7 @@ const ACTION_LABEL: Record<string, string> = {
 };
 
 export function actionLabel(action: string | null) {
-  if (!action) return "—";
+  if (!action) return "–";
   return ACTION_LABEL[action] ?? action;
 }
 

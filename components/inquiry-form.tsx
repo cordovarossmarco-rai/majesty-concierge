@@ -24,9 +24,12 @@ const CATEGORY_LABEL: Record<string, string> = {
   package: "Package or spa day",
 };
 
-const field = "w-full bg-paper-raised border border-line px-3 py-2.5 text-[15px] text-ink " +
-  "placeholder:text-ink-soft/70 focus:border-line-strong transition-colors";
-const label = "block text-[13px] font-medium text-ink mb-1.5";
+// One field style, one label style. Repeating these inline is how two inputs end up a pixel apart.
+const field =
+  "w-full bg-paper-raised border border-line px-3.5 py-3 text-[15px] text-ink " +
+  "placeholder:text-ink-soft/60 transition-[border-color,box-shadow] duration-200 " +
+  "hover:border-line-strong";
+const label = "block text-[13px] font-medium tracking-[0.01em] text-ink mb-2";
 
 export function InquiryForm() {
   const [values, setValues] = useState<InquiryInput>(empty);
@@ -67,14 +70,16 @@ export function InquiryForm() {
 
   if (state === "sent") {
     return (
-      <div className="border border-line bg-paper-raised px-6 py-10 sm:px-10">
-        <h2 className="font-display text-3xl font-light">Thank you, {values.firstName}.</h2>
-        <p className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-ink-soft">
+      <div className="rise border border-line bg-paper-raised px-7 py-12 sm:px-12 sm:py-14">
+        <h2 className="font-display text-[2rem] leading-tight font-light sm:text-[2.5rem]">
+          Thank you, {values.firstName}.
+        </h2>
+        <p className="mt-5 max-w-[52ch] text-[15px] leading-[1.7] text-ink-soft">
           We have your enquiry. Someone from the spa will be in touch by{" "}
           {values.contactMethod === "email" ? "email" : values.contactMethod} to confirm the details
           and find a time that works.
         </p>
-        <p className="mt-6 border-t border-line pt-6 text-[13px] text-ink-soft">
+        <p className="mt-8 border-t border-line pt-6 text-[13px] leading-relaxed text-ink-soft">
           Nothing is booked yet. A person reads every enquiry before we confirm anything.
         </p>
       </div>
@@ -82,8 +87,8 @@ export function InquiryForm() {
   }
 
   return (
-    <form onSubmit={submit} noValidate className="space-y-8">
-      <fieldset className="space-y-5" disabled={state === "sending"}>
+    <form onSubmit={submit} noValidate className="space-y-10">
+      <fieldset className="space-y-6" disabled={state === "sending"}>
         <legend className="sr-only">Your details</legend>
 
         <div className="grid gap-5 sm:grid-cols-2">
@@ -114,8 +119,8 @@ export function InquiryForm() {
         </Field>
       </fieldset>
 
-      <fieldset className="space-y-5 border-t border-line pt-8" disabled={state === "sending"}>
-        <legend className="font-display text-xl font-light">What you are looking for</legend>
+      <fieldset className="space-y-6 border-t border-line pt-10" disabled={state === "sending"}>
+        <legend className="font-display text-2xl font-light">What you are looking for</legend>
 
         <Field id="serviceCategory" label="Type of treatment" hint="Optional, we can help you choose">
           <select id="serviceCategory" className={field} value={values.serviceCategory ?? ""}
@@ -155,7 +160,7 @@ export function InquiryForm() {
           <div className="flex flex-wrap gap-2">
             {(["phone", "text", "email"] as const).map((m) => (
               <label key={m}
-                className={`cursor-pointer border px-4 py-2 text-[15px] capitalize transition-colors ${
+                className={`cursor-pointer border px-5 py-2.5 text-[15px] capitalize transition-all duration-200 ${
                   values.contactMethod === m
                     ? "border-accent bg-accent text-paper-raised"
                     : "border-line text-ink hover:border-line-strong"
@@ -177,8 +182,9 @@ export function InquiryForm() {
       )}
 
       <button type="submit" disabled={state === "sending"}
-        className="w-full bg-accent px-6 py-3.5 text-[15px] font-medium text-paper-raised
-          transition-all hover:bg-accent-hover active:translate-y-px disabled:opacity-60 sm:w-auto">
+        className="w-full bg-accent px-8 py-3.5 text-[15px] font-medium tracking-[0.01em]
+          text-paper-raised transition-all duration-200 hover:bg-accent-hover
+          active:translate-y-px disabled:cursor-not-allowed disabled:opacity-55 sm:w-auto">
         {state === "sending" ? "Sending" : "Send enquiry"}
       </button>
     </form>
