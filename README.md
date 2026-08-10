@@ -220,13 +220,13 @@ cp .env.example .env.local
 # then fill in .env.local:
 #   DATABASE_URL      a Postgres connection string
 #   ANTHROPIC_API_KEY from console.anthropic.com
-#   ADMIN_TOKEN       any long random string, e.g. openssl rand -hex 24
+#   ADMIN_PASSWORD    the shared staff password for /admin
 
 npm run db:push     # create the tables
 npm run dev         # http://localhost:3000
 ```
 
-The guest form is at `/`. The staff dashboard is at `/admin` and asks for the `ADMIN_TOKEN`.
+The guest form is at `/`. The staff dashboard is at `/admin` and asks for the `ADMIN_PASSWORD`.
 
 ```bash
 npm test            # unit tests for triage, the guard, and availability
@@ -241,14 +241,14 @@ npm run build       # production build
 and `.env*` is gitignored. Both the browser and the server validate against the same Zod schema, and
 the server's check is the one that counts. Database access goes through Drizzle's parameterised
 queries. The admin area is gated by middleware on every `/admin` request, and the gate refuses
-everyone when `ADMIN_TOKEN` is unset rather than falling open. The session cookie is httpOnly,
+everyone when `ADMIN_PASSWORD` is unset rather than falling open. The session cookie is httpOnly,
 sameSite lax, and secure in production. Test data only; no real guest information was used at any
 point.
 
 **What is missing, and would matter in production.** These are stated plainly because a prototype
 that hides them is worse than one that does not have them.
 
-- The admin gate is one shared token, not authentication. There are no accounts and no roles, so it
+- The admin gate is one shared password, not authentication. There are no accounts and no roles, so it
   cannot tell you who changed a lead. Anyone with the token has full access.
 - No rate limiting on the public form. Someone could submit repeatedly and run up API cost.
 - No CSRF protection beyond the framework defaults, and no bot protection on the form.
