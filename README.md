@@ -223,6 +223,7 @@ cp .env.example .env.local
 #   DATABASE_URL      a Postgres connection string
 #   ANTHROPIC_API_KEY from console.anthropic.com
 #   ADMIN_PASSWORD    the shared staff password for /admin
+#   ANTHROPIC_MODEL   optional, defaults to claude-opus-5
 
 npm run db:push     # create the tables
 npm run dev         # http://localhost:3000
@@ -311,22 +312,39 @@ Roughly in the order it would matter:
 
 ## Estimated monthly cost in production
 
-Assuming a single spa at roughly 300 inquiries a month.
+Assuming a single spa at roughly 100 inquiries a month. The low column is what it actually costs to
+run: Vercel Pro is required for commercial use, Neon's free tier carries this volume comfortably,
+and at 100 inquiries nothing else has a bill.
 
 | | | |
 |---|---|---|
-| Vercel | Pro | $20 |
-| Neon Postgres | Launch | $19 |
-| Anthropic API | ~300 inquiries at roughly $0.02 to $0.04 each | $6 to $12 |
-| Resend | free to 3,000 emails, then | $0 to $20 |
-| Twilio | only if texts are used, about $0.008 each | $0 to $5 |
+| Vercel | Pro, required for commercial use | $20 |
+| Neon Postgres | free tier at this volume, Launch if backups and branching are wanted | $0 to $19 |
+| Anthropic API | ~100 inquiries at roughly $0.02 to $0.04 each | $2 to $4 |
+| Resend | free to 3,000 emails a month, which 100 inquiries never approaches | $0 |
+| Twilio | only if texts are used, about $0.008 each | $0 to $1 |
 | Domain | amortised | $2 |
-| | | **about $50 to $80 a month** |
+| | | **about $24 to $46 a month** |
 
-The AI is the smallest line, which is worth saying out loud, because it is usually assumed to be
-the largest. Moving classification to a cheaper model would take that line under $5, at some cost
-in the quality of the drafts. It would be worth testing against the evaluation set above before
-deciding either way.
+The AI is the smallest line, which is worth saying out loud, because it is usually assumed to be the
+largest. Hosting is roughly ten times the model spend.
 
-Volume changes very little here. At a thousand inquiries a month the AI line is still under $40 and
-the hosting does not move.
+### Why the model tier is what it is
+
+A cheaper tier is the obvious saving, so it was measured rather than assumed. Running the three
+required scenarios three times each:
+
+| | Opus | A cheaper tier |
+|---|---|---|
+| Same classification on every run | 3 of 3 scenarios | 1 of 3 |
+| Recommended a package for the anniversary guest | every run | 1 run in 3; otherwise asked her to choose |
+| Priority assigned to the service complaint | general, every run | hot, every run |
+
+The last row is the one that decided it. A complaint is not a sales lead, and labelling it hot puts
+it in the queue staff use to chase revenue rather than the one they use to fix problems. The cheaper
+tier did that consistently, not occasionally.
+
+The saving would have been under a dollar a month at this volume. Consistency on the judgments the
+system is actually graded on is worth more than that, so the default stays. The tier is read from
+`ANTHROPIC_MODEL`, so it can be re-tested and changed without a code change as models and prices
+move — which they do.

@@ -6,7 +6,14 @@ import { offerSlots, type Slot } from "./availability";
 import type { AiResult } from "./guard";
 import type { InquiryInput } from "./validation";
 
-const MODEL = "claude-opus-5";
+/*
+  The tier is configuration so it can be re-tested as models and prices move, but the default was
+  chosen by measurement rather than habit. Run against the three required scenarios, Opus returned
+  the same classification on every run; a cheaper tier was cheaper by under a dollar a month at this
+  volume and disagreed with itself between runs, including labelling a service complaint a hot lead.
+  Consistency on the judgment is worth more than the saving.
+*/
+const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-opus-5";
 
 /*
   The shape the model has to fill in. Constraining serviceInterest to the catalog ids here means
