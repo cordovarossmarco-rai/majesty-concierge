@@ -1,6 +1,6 @@
 # Majesty Day Spa inquiry and booking concierge
 
-A prototype that takes an enquiry from a prospective guest, works out what they are asking for,
+A prototype that takes an inquiry from a prospective guest, works out what they are asking for,
 recommends a treatment from the spa's own list, offers appointment times, and hands the front desk
 something they can act on.
 
@@ -11,7 +11,7 @@ limitations and production work below are specific about the difference.
 
 ## The idea it is built around
 
-A spa enquiry is not really a data-entry problem. Most guests write a sentence or two, some know
+A spa inquiry is not really a data-entry problem. Most guests write a sentence or two, some know
 exactly what they want, some want to be told, and a few are writing because something went wrong
 last time. The useful thing a system can do is tell those apart and put the third group in front
 of a person quickly.
@@ -28,7 +28,7 @@ than caught afterwards.
 
 **Escalation does not depend on the model agreeing.** A separate set of plain pattern checks runs
 before the model sees anything. If a guest mentions a manager, a refund, an allergy or an injury,
-the enquiry goes to a person whatever the model decides. The third required test scenario passes
+the inquiry goes to a person whatever the model decides. The third required test scenario passes
 because of this, not because the model was asked nicely.
 
 **A guard can add caution, never remove it.** Everything the model returns passes through one
@@ -80,15 +80,15 @@ POST /api/inquiries
 ```
 
 **The lead is written down before anything calls a third party.** If the Anthropic API is slow,
-rate limiting us or down, the spa still has the enquiry and the guest still gets a confirmation.
+rate limiting us or down, the spa still has the inquiry and the guest still gets a confirmation.
 This was tested by running the whole flow with a deliberately invalid API key: the guest gets their
 201, the message is stored intact, the lead is flagged for a person, and a plain holding reply is
 prepared that a receptionist could send as it stands.
 
-Reading an enquiry takes several seconds, so it happens after the response rather than during it.
+Reading an inquiry takes several seconds, so it happens after the response rather than during it.
 The guest waits on a database insert, not on a model. The cost of that choice is a few seconds
 where a lead exists with no reading attached, so the dashboard shows "being read" rather than a
-blank row, which would look like a lost enquiry.
+blank row, which would look like a lost inquiry.
 
 ---
 
@@ -97,7 +97,7 @@ blank row, which would look like a lost enquiry.
 Three tables. The separation is deliberate rather than tidy-mindedness.
 
 **`leads`** holds what the guest actually submitted, plus a status of `new`, `contacted`, `booked` or
-`closed`. Nothing the model produces is written here, so re-reading an enquiry can never alter what
+`closed`. Nothing the model produces is written here, so re-reading an inquiry can never alter what
 the guest said.
 
 **`lead_ai`** holds one row per lead with the reading: summary, category, priority, recommended
@@ -122,7 +122,7 @@ Plain pattern matching over the message for a manager or supervisor, a complaint
 dissatisfaction, an allergy, a possible injury or reaction, and legal language. Any hit forces
 escalation regardless of what the model later says.
 
-The patterns are deliberately loose. An enquiry escalated when it did not need to be costs a staff
+The patterns are deliberately loose. An inquiry escalated when it did not need to be costs a staff
 member thirty seconds of reading; a complaint the assistant tries to answer alone costs a great
 deal more. The reaction patterns match how guests actually write, so "my skin has been red and
 irritated" escalates and not only the word "reaction", which nobody uses.
@@ -141,7 +141,7 @@ where every prohibition is paired with what to do instead, because "never quote 
 leaves the model with nothing to say. Effort is set to `low`: this is a short classification with a
 deterministic guard behind it, so the tokens are better spent on being quick.
 
-If the call fails for any reason the enquiry falls back to a safe reading: needs a person, warm
+If the call fails for any reason the inquiry falls back to a safe reading: needs a person, warm
 priority, a callback queued, and a neutral holding reply. **A failed classification never loses a
 lead**, it only means someone reads it unaided.
 
@@ -152,7 +152,7 @@ recommended treatment could not finish in before closing, flags a voucher pointe
 voucher does not cover, withholds appointment times entirely from someone writing in to complain,
 and stops sending a guest to online booking once a person needs to look.
 
-Each of those adds a line to the reason shown on the lead, so the dashboard says why an enquiry was
+Each of those adds a line to the reason shown on the lead, so the dashboard says why an inquiry was
 held back rather than just that it was.
 
 ### Availability: `lib/availability.ts`
@@ -170,16 +170,16 @@ day also fits a facial; the reverse is not true, which is the reason it rounds u
 
 ## Automations
 
-Four steps run after every enquiry, in `lib/automations.ts`. Each writes one row to
+Four steps run after every inquiry, in `lib/automations.ts`. Each writes one row to
 `automation_runs` through a single helper, so there is one place where a result is recorded rather
 than four.
 
 | Step | What it does | When it skips |
 |---|---|---|
-| `confirmation` | Prepares an acknowledgement, by email, text or call, whichever the guest asked for | Held back when the enquiry goes to a manager, so a complaint is not answered by an autoresponder |
+| `confirmation` | Prepares an acknowledgement, by email, text or call, whichever the guest asked for | Held back when the inquiry goes to a manager, so a complaint is not answered by an autoresponder |
 | `hot_lead_notification` | Tells the front desk | When the priority is not hot |
 | `followup_task` | Creates a task with the escalation reason | When nothing needs a person |
-| `crm_sync` | Upserts the guest and enquiry | Does not skip |
+| `crm_sync` | Upserts the guest and inquiry | Does not skip |
 
 **Every one of these is simulated, and says so in the text it writes to the log.** No automation
 sends anything and nothing is written outside this database. The one place a real message can leave
@@ -205,7 +205,7 @@ function; the logging, the skip conditions and the failure handling stay as they
 | `availability` | Replace `slotsFor()` with a call to the booking system's availability endpoint, cached for a minute or two. The rest of the pipeline is unchanged because it already treats availability as data handed to it. |
 
 A live version would also want an outbound queue rather than firing inside the request lifecycle,
-so a failed send can be retried without re-reading the enquiry.
+so a failed send can be retried without re-reading the inquiry.
 
 ---
 
@@ -257,7 +257,7 @@ that hides them is worse than one that does not have them.
 - Guest contact details are stored in plain columns with no encryption at rest beyond whatever the
   database provider gives, and there is no retention policy or deletion route.
 - No audit trail. A status change or a draft edit overwrites without recording who or when.
-- Enquiry text is sent to Anthropic's API. Real deployment needs that in a privacy notice, and a
+- Inquiry text is sent to Anthropic's API. Real deployment needs that in a privacy notice, and a
   data processing agreement.
 
 ---
@@ -304,20 +304,20 @@ Roughly in the order it would matter:
 7. **Retention and deletion** for guest data, with the privacy notice to match.
 8. **Monitoring.** An alert when classifications start failing, rather than finding out from the
    automation log.
-9. **Evaluation set.** Thirty or so real enquiries with the right answers written down, so a prompt
+9. **Evaluation set.** Thirty or so real inquiries with the right answers written down, so a prompt
    change can be checked rather than eyeballed.
 
 ---
 
 ## Estimated monthly cost in production
 
-Assuming a single spa at roughly 300 enquiries a month.
+Assuming a single spa at roughly 300 inquiries a month.
 
 | | | |
 |---|---|---|
 | Vercel | Pro | $20 |
 | Neon Postgres | Launch | $19 |
-| Anthropic API | ~300 enquiries at roughly $0.02 to $0.04 each | $6 to $12 |
+| Anthropic API | ~300 inquiries at roughly $0.02 to $0.04 each | $6 to $12 |
 | Resend | free to 3,000 emails, then | $0 to $20 |
 | Twilio | only if texts are used, about $0.008 each | $0 to $5 |
 | Domain | amortised | $2 |
@@ -328,5 +328,5 @@ the largest. Moving classification to a cheaper model would take that line under
 in the quality of the drafts. It would be worth testing against the evaluation set above before
 deciding either way.
 
-Volume changes very little here. At a thousand enquiries a month the AI line is still under $40 and
+Volume changes very little here. At a thousand inquiries a month the AI line is still under $40 and
 the hosting does not move.
