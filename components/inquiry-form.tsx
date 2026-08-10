@@ -146,8 +146,8 @@ export function InquiryForm() {
       <Progress step={step} />
 
       {step === 1 ? (
-        <div className="space-y-4 sm:space-y-5">
-          <Tile title="What you are looking for" className="rise">
+        <Tile title="What you are looking for" className="rise">
+          <div className="space-y-7">
             <fieldset disabled={busy} className="space-y-5">
               <Field
                 id="serviceCategory"
@@ -205,11 +205,9 @@ export function InquiryForm() {
                 <span>I have a Groupon voucher</span>
               </label>
             </fieldset>
-          </Tile>
 
-          <Tile title="In your own words" className="rise" delay="70ms">
-            <fieldset disabled={busy}>
-              <Field id="message" label="Tell us what you need" error={errors.message}>
+            <fieldset disabled={busy} className="border-t border-line pt-7">
+              <Field id="message" label="In your own words" error={errors.message}>
                 <textarea
                   id="message"
                   rows={6}
@@ -220,20 +218,18 @@ export function InquiryForm() {
                 />
               </Field>
             </fieldset>
-          </Tile>
 
-          <Tile className="rise" delay="140ms">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-7">
               <p className="text-[13px] text-ink-soft">Your details come next.</p>
               <button type="submit" className={primaryButton}>
                 Next
               </button>
             </div>
-          </Tile>
-        </div>
+          </div>
+        </Tile>
       ) : (
-        <div className="space-y-4 sm:space-y-5">
-          <Tile title="How we reach you" className="rise">
+        <Tile title="How we reach you" className="rise">
+          <div className="space-y-7">
             <fieldset disabled={busy} className="space-y-5">
               <div className="grid gap-5 sm:grid-cols-2">
                 <Field id="firstName" label="First name" error={errors.firstName}>
@@ -288,10 +284,8 @@ export function InquiryForm() {
                 />
               </Field>
             </fieldset>
-          </Tile>
 
-          <Tile className="rise" delay="70ms">
-            <fieldset disabled={busy}>
+            <fieldset disabled={busy} className="border-t border-line pt-7">
               <legend className={label}>How should we reach you</legend>
               <div className="flex flex-wrap gap-2">
                 {(["phone", "text", "email"] as const).map((m) => (
@@ -316,16 +310,14 @@ export function InquiryForm() {
                 ))}
               </div>
             </fieldset>
-          </Tile>
 
-          {state === "error" && (
-            <p role="alert" className="glass px-5 py-4 text-[14px] text-[var(--danger)]">
-              Something went wrong sending that. Please try again, or call the spa directly.
-            </p>
-          )}
+            {state === "error" && (
+              <p role="alert" className="text-[14px] text-[var(--danger)]">
+                Something went wrong sending that. Please try again, or call the spa directly.
+              </p>
+            )}
 
-          <Tile className="rise" delay="140ms">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-7">
               <button
                 type="button"
                 onClick={back}
@@ -338,8 +330,8 @@ export function InquiryForm() {
                 {busy ? "Sending" : "Send enquiry"}
               </button>
             </div>
-          </Tile>
-        </div>
+          </div>
+        </Tile>
       )}
     </form>
   );
