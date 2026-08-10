@@ -65,12 +65,12 @@ export function SectionHeader({ children }: { children: ReactNode }) {
 }
 
 /**
- * Says out loud that a step did not really happen.
+ * A quiet aside next to something that could otherwise be misread.
  *
- * Nothing in this prototype sends an email or writes to a booking system, and a dashboard that
- * looks convincing is exactly the thing that could be misread as proof that it did.
+ * Most of these say out loud that a step did not really happen, because a dashboard that looks
+ * convincing is exactly the thing that gets mistaken for proof that a guest was contacted.
  */
-export function SimulatedNote({ children }: { children: ReactNode }) {
+export function Note({ children }: { children: ReactNode }) {
   return (
     <p className="border-l-2 border-line-strong pl-3 text-[13px] leading-relaxed text-ink-soft">{children}</p>
   );

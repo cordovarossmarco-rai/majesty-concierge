@@ -5,7 +5,7 @@ import { asc, eq } from "drizzle-orm";
 import { db, leads, leadAi, automationRuns } from "@/lib/db";
 import { findService } from "@/lib/catalog";
 import type { Slot } from "@/lib/availability";
-import { PriorityPill, Pill, RunStatus, SectionHeader, SimulatedNote, actionLabel } from "@/components/ui";
+import { PriorityPill, Pill, RunStatus, SectionHeader, Note, actionLabel } from "@/components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -159,10 +159,10 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
               </p>
             )}
             <div className="mt-3">
-              <SimulatedNote>
+              <Note>
                 Availability is generated for the prototype, not read from the spa&apos;s calendar,
                 and no time is held.
-              </SimulatedNote>
+              </Note>
             </div>
           </section>
 
@@ -191,11 +191,11 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
                 </a>
               </div>
               <div className="mt-3">
-                <SimulatedNote>
+                <Note>
                   Save your edits first, then hand off. This opens your own mail or messages app with
                   the reply ready, by whichever way the guest asked to be reached, so a person
                   presses send rather than the system.
-                </SimulatedNote>
+                </Note>
               </div>
             </form>
           </section>

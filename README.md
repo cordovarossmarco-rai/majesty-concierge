@@ -181,8 +181,10 @@ than four.
 | `followup_task` | Creates a task with the escalation reason | When nothing needs a person |
 | `crm_sync` | Upserts the guest and enquiry | Does not skip |
 
-**Every one of these is simulated, and says so in the text it writes to the log.** Nothing is sent,
-and nothing is written outside this database. The wording is deliberate: a dashboard that looks
+**Every one of these is simulated, and says so in the text it writes to the log.** No automation
+sends anything and nothing is written outside this database. The one place a real message can leave
+the building is the dashboard, where a staff member hands the approved draft to their own mail or
+messages app and presses send themselves. The wording is deliberate: a dashboard that looks
 convincing is exactly the thing that could be misread as evidence that a guest was emailed.
 
 What is being demonstrated is the decision each step takes, not the delivery. Which guests should
@@ -290,8 +292,9 @@ Roughly in the order it would matter:
 
 1. **Real authentication.** Accounts, roles and an audit trail, so a manager and a receptionist do
    not share one login.
-2. **Approve before send.** The draft already exists and is editable; the missing piece is the
-   button that sends it and the record that it was sent.
+2. **Server-side sending.** The draft is editable and the dashboard already hands it to the staff
+   member's own mail or messages app, so a reply can go out today. What is missing is sending it
+   from the server, which is what gives you a record of what was sent, to whom and when.
 3. **Live availability and booking.** Read from Booker/Mindbody, hold a slot rather than suggest
    one.
 4. **A queue for outbound work,** so a failed email retries by itself.
