@@ -34,7 +34,7 @@ export default async function Login({
     <main className="mx-auto w-full max-w-sm px-5 py-24">
       <h1 className="font-display text-3xl font-light">Staff sign in</h1>
       <p className="mt-3 text-[14px] leading-relaxed text-ink-soft">
-        Enter the staff password to see the enquiries.
+        Enter the staff password to see the inquiries.
       </p>
 
       <form action={signIn} className="mt-8 space-y-4">

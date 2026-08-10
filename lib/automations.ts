@@ -51,7 +51,7 @@ export async function recordClassification(leadId: string, model: string, failur
     leadId,
     "classification",
     failure ? "failed" : "ok",
-    failure ? `${failure} The enquiry was kept and flagged for a person.` : `Read by ${model}.`,
+    failure ? `${failure} The inquiry was kept and flagged for a person.` : `Read by ${model}.`,
   );
 }
 
@@ -94,6 +94,6 @@ export async function runAutomations(leadId: string, guest: Recipient, ai: Guard
   });
 
   await step(leadId, "crm_sync", () => {
-    return `Simulated. ${guest.firstName}'s details and the enquiry would be upserted to the spa's booking system.`;
+    return `Simulated. ${guest.firstName}'s details and the inquiry would be upserted to the spa's booking system.`;
   });
 }

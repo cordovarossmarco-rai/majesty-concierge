@@ -56,7 +56,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       : lead.contactMethod === "phone"
         ? { href: `tel:${lead.phone}`, label: `Call ${lead.phone}` }
         : {
-            href: `mailto:${lead.email}?subject=${encodeURIComponent("Your enquiry with Majesty Day Spa")}&body=${encodeURIComponent(draft)}`,
+            href: `mailto:${lead.email}?subject=${encodeURIComponent("Your inquiry with Majesty Day Spa")}&body=${encodeURIComponent(draft)}`,
             label: "Open in email",
           };
 
@@ -83,7 +83,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8">
       <Link href="/admin" className="text-[14px] text-ink-soft underline-offset-2 hover:underline">
-        ← All enquiries
+        ← All inquiries
       </Link>
 
       <header className="mt-6 mb-8 border-b border-line pb-6">
@@ -127,7 +127,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
       {!ai ? (
         <section className="mb-8 border border-line bg-paper-raised px-5 py-6">
           <p className="text-[15px] text-ink-soft italic">
-            This enquiry is still being read. The guest has already been thanked, so nothing is
+            This inquiry is still being read. The guest has already been thanked, so nothing is
             waiting on it. Refresh in a moment.
           </p>
         </section>
@@ -155,7 +155,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
               </ul>
             ) : (
               <p className="text-[15px] text-ink-soft">
-                None. Either nothing suitable was free, or this enquiry needed a person first.
+                None. Either nothing suitable was free, or this inquiry needed a person first.
               </p>
             )}
             <div className="mt-3">

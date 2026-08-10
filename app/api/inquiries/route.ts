@@ -36,8 +36,8 @@ export async function POST(request: Request) {
   const inquiry = parsed.data;
 
   /*
-    The guest's enquiry is written down before anything else happens, and certainly before we call
-    a third party. If Anthropic is slow, rate limiting us, or down, the spa still has the enquiry
+    The guest's inquiry is written down before anything else happens, and certainly before we call
+    a third party. If Anthropic is slow, rate limiting us, or down, the spa still has the inquiry
     and the guest still gets an answer from the form. The classification is an improvement on top
     of a lead, never a condition of having one.
   */
@@ -61,12 +61,12 @@ export async function POST(request: Request) {
       .returning({ id: leads.id });
     leadId = row.id;
   } catch (error) {
-    console.error("Could not save the enquiry:", error);
+    console.error("Could not save the inquiry:", error);
     return NextResponse.json({ error: "We could not save that. Please try again." }, { status: 500 });
   }
 
   // Everything past this point runs after the guest already has their confirmation. Reading the
-  // enquiry takes the model several seconds and there is no reason to make someone sit through it.
+  // inquiry takes the model several seconds and there is no reason to make someone sit through it.
   after(async () => {
     try {
       const t = triage(inquiry.message, inquiry.hasGroupon);
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
           proposedSlots: guarded.slots.length > 0 ? JSON.stringify(guarded.slots) : null,
           model: outcome.model,
         })
-        // Re-reading an enquiry should replace the previous reading rather than fail on the
+        // Re-reading an inquiry should replace the previous reading rather than fail on the
         // primary key, so this stays safe to run again.
         .onConflictDoUpdate({
           target: leadAi.leadId,
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
         guarded,
       );
     } catch (error) {
-      // The lead is already saved, so the worst case here is an enquiry a person has to read
+      // The lead is already saved, so the worst case here is an inquiry a person has to read
       // unaided. Say so in the log rather than failing quietly.
       console.error(`Could not classify lead ${leadId}:`, error);
     }

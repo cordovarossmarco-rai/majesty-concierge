@@ -5,7 +5,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
   This is not real authentication and the README says so plainly. There are no accounts, no
   per-person audit trail, and one password for everybody, so it cannot tell you who changed a lead's
-  status. What it does do is keep guest enquiries off the open internet while the prototype is
+  status. What it does do is keep guest inquiries off the open internet while the prototype is
   hosted somewhere public, which is the actual risk during an evaluation.
 
   Real sign-in, roles and an audit trail are described in the README as production work.

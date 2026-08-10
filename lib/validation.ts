@@ -18,7 +18,7 @@ export const inquirySchema = z.object({
   preferredDate: z.string().trim().optional(),
   preferredTime: z.string().trim().optional(),
   // Ten characters, not two sentences. The rule only needs to stop an empty or accidental
-  // submission; the assistant handles a short enquiry fine and a person reads it either way.
+  // submission; the assistant handles a short inquiry fine and a person reads it either way.
   message: z.string().trim().min(10, "Please tell us a little about what you are looking for"),
   contactMethod: z.enum(["phone", "text", "email"]),
 });

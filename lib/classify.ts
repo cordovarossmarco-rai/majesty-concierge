@@ -27,7 +27,7 @@ const aiResultSchema = z.object({
   category: z
     .string()
     .describe(
-      "A few words naming what this enquiry is really about, for example 'first visit, wants a recommendation' or 'gift for a birthday'.",
+      "A few words naming what this inquiry is really about, for example 'first visit, wants a recommendation' or 'gift for a birthday'.",
     ),
   serviceInterest: z
     .enum(serviceIds as [string, ...string[]])
@@ -36,7 +36,7 @@ const aiResultSchema = z.object({
   priority: z
     .enum(["hot", "warm", "general"])
     .describe(
-      "hot when they name a specific date within about a week or are ready to book now, warm when they are choosing between treatments or planning further ahead, general when there is no timing in the enquiry at all.",
+      "hot when they name a specific date within about a week or are ready to book now, warm when they are choosing between treatments or planning further ahead, general when there is no timing in the inquiry at all.",
     ),
   needsStaff: z
     .boolean()
@@ -90,7 +90,7 @@ function systemPrompt(offered: Slot[]) {
           offered.map((s) => `- ${s.id} : ${s.label}`).join("\n"),
           "",
           "Put the ids in proposedSlots and write those same times into the draft. Offer at most two,",
-          "and offer none at all when the enquiry is a complaint or when you do not yet know enough",
+          "and offer none at all when the inquiry is a complaint or when you do not yet know enough",
           "to suggest a treatment. Say that the time is held only once the spa confirms it.",
           "",
           "The draft must name exactly the times in proposedSlots and no others. A time mentioned to",
@@ -103,7 +103,7 @@ function systemPrompt(offered: Slot[]) {
         ];
 
   return [
-    "You read enquiries sent to Majesty Day Spa and prepare them for the front desk. You are not",
+    "You read inquiries sent to Majesty Day Spa and prepare them for the front desk. You are not",
     "talking to the guest. A member of staff reads everything you write before any of it is sent.",
     "",
     "These are the only treatments the spa offers:",
@@ -124,11 +124,11 @@ function systemPrompt(offered: Slot[]) {
     "- Never state a policy that is not in the list above. If the guest asks about anything else, set needsStaff to true and leave the question for a person.",
     "- Never confirm a booking. The draft should say someone will be in touch to confirm.",
     "",
-    "needsStaff means this enquiry needs someone's judgement before a reply goes back. Set it to",
+    "needsStaff means this inquiry needs someone's judgement before a reply goes back. Set it to",
     "true for complaints, injuries, allergies, refunds, anything you are unsure of, and any",
     "question you cannot answer from the two lists above.",
     "",
-    "Set it to false for a straightforward enquiry. The front desk confirms the time and the cost",
+    "Set it to false for a straightforward inquiry. The front desk confirms the time and the cost",
     "on every booking, so that on its own is not a reason to flag one. A guest who knows what they",
     "want, or who wants a recommendation you can make from the list, is routine.",
     "",
@@ -153,7 +153,7 @@ function userPrompt(inquiry: InquiryInput) {
 
 /*
   Constructed on first use rather than at import, so that a missing key surfaces as a handled
-  fallback on one enquiry instead of taking down every module that imports this file.
+  fallback on one inquiry instead of taking down every module that imports this file.
 */
 let client: Anthropic | null = null;
 function getClient() {
@@ -169,14 +169,14 @@ function fallback(inquiry: InquiryInput, failure: string, offered: Slot[] = []):
     offered,
     result: {
       proposedSlots: [],
-      summary: `Enquiry from ${inquiry.firstName} ${inquiry.lastName}. Not yet summarised, please read it in full.`,
+      summary: `Inquiry from ${inquiry.firstName} ${inquiry.lastName}. Not yet summarised, please read it in full.`,
       category: "needs review",
       serviceInterest: null,
       priority: "warm",
       needsStaff: true,
       draftResponse:
         `Hi ${inquiry.firstName}, thank you for getting in touch with Majesty Day Spa. ` +
-        `We have your enquiry and someone will be back to you shortly to go through the details ` +
+        `We have your inquiry and someone will be back to you shortly to go through the details ` +
         `and find a time that suits you.`,
       nextAction: "schedule_staff_callback",
     },
@@ -198,7 +198,7 @@ export async function classify(inquiry: InquiryInput): Promise<ClassifyOutcome> 
     });
 
     if (response.stop_reason === "refusal") {
-      return fallback(inquiry, "The model declined to answer this enquiry.", offered);
+      return fallback(inquiry, "The model declined to answer this inquiry.", offered);
     }
     if (!response.parsed_output) {
       return fallback(inquiry, `No parsable result returned (stop reason: ${response.stop_reason}).`, offered);

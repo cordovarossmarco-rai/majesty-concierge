@@ -128,12 +128,12 @@ export function InquiryForm() {
           Thank you, {values.firstName}.
         </h2>
         <p className="mt-5 max-w-[54ch] text-[15px] leading-[1.75] text-ink-soft">
-          We have your enquiry. Someone from the spa will be in touch by{" "}
+          We have your inquiry. Someone from the spa will be in touch by{" "}
           {values.contactMethod === "email" ? "email" : values.contactMethod} to confirm the details
           and find a time that works.
         </p>
         <p className="mt-8 border-t border-line pt-6 text-[13px] leading-relaxed text-ink-soft">
-          Nothing is booked yet. A person reads every enquiry before we confirm anything.
+          Nothing is booked yet. A person reads every inquiry before we confirm anything.
         </p>
       </div>
     );
@@ -327,7 +327,7 @@ export function InquiryForm() {
                 Back
               </button>
               <button type="submit" disabled={busy} className={primaryButton}>
-                {busy ? "Sending" : "Send enquiry"}
+                {busy ? "Sending" : "Send inquiry"}
               </button>
             </div>
           </div>

@@ -51,7 +51,7 @@ export default async function Admin({
   }
 
   // A left join, because a lead that has only just arrived has no reading yet and still has to
-  // appear in this list. Dropping it until the model catches up would look like losing enquiries.
+  // appear in this list. Dropping it until the model catches up would look like losing inquiries.
   const rows = await db
     .select({
       id: leads.id,
@@ -86,11 +86,11 @@ export default async function Admin({
     <main className="mx-auto w-full max-w-6xl px-5 py-10 sm:px-8">
       <header className="mb-8">
         <p className="font-display text-[13px] tracking-[0.2em] text-ink-soft uppercase">Majesty Day Spa</p>
-        <h1 className="mt-3 font-display text-3xl font-light sm:text-4xl">Enquiries</h1>
+        <h1 className="mt-3 font-display text-3xl font-light sm:text-4xl">Inquiries</h1>
       </header>
 
       <section className="mb-8 grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
-        <Figure label="Enquiries" value={totals.total} />
+        <Figure label="Inquiries" value={totals.total} />
         <Figure label="Needing a person" value={totals.flagged} />
         <Figure label="Hot" value={totals.hot} />
         <Figure label="Still being read" value={totals.unread} />
@@ -124,7 +124,7 @@ export default async function Admin({
             name="q"
             defaultValue={q ?? ""}
             placeholder="Search name, email or message"
-            aria-label="Search enquiries"
+            aria-label="Search inquiries"
             className="min-w-0 flex-1 border border-line bg-paper-raised px-3 py-2 text-[14px] focus:border-line-strong"
           />
           <button type="submit" className="border border-line-strong px-4 py-2 text-[14px] hover:border-ink">
@@ -139,7 +139,7 @@ export default async function Admin({
       </section>
 
       <SectionHeader>
-        {rows.length} {rows.length === 1 ? "enquiry" : "enquiries"}
+        {rows.length} {rows.length === 1 ? "inquiry" : "inquiries"}
       </SectionHeader>
 
       {rows.length === 0 ? (
