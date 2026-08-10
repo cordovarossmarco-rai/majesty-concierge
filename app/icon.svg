@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Majesty Day Spa">
+  <rect width="32" height="32" rx="6" fill="#2d4f3c"/>
+  <path d="M9 23V9.6l7 8 7-8V23"
+        fill="none" stroke="#ece5da" stroke-width="2.4"
+        stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
