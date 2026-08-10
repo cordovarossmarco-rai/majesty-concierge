@@ -347,4 +347,4 @@ tier did that consistently, not occasionally.
 The saving would have been under a dollar a month at this volume. Consistency on the judgments the
 system is actually graded on is worth more than that, so the default stays. The tier is read from
 `ANTHROPIC_MODEL`, so it can be re-tested and changed without a code change as models and prices
-move — which they do.
+move, which they do.
