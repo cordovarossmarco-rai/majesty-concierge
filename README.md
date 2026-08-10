@@ -195,7 +195,7 @@ function; the logging, the skip conditions and the failure handling stay as they
 
 | Step | Live version |
 |---|---|
-| `confirmation` | Resend or Postmark for email, Twilio for text. The step already branches on the guest's stated preference, so the live version swaps the body for a real send, triggered by a staff member approving the draft rather than automatically on submit. |
+| `confirmation` | Resend or Postmark for email, Twilio for text. The step already branches on the guest's stated preference, so the live version swaps the body for a real send, triggered by a staff member approving the draft rather than automatically on submit. Today the dashboard hands the approved draft to the staff member's own mail or messages app, which means a person genuinely sends it without a mail provider being wired in. |
 | Text messages | Twilio, gated on `contactMethod` being `text` and on the same approval. |
 | `hot_lead_notification` | Slack incoming webhook, or Twilio for a text to the duty manager out of hours. |
 | `followup_task` | Whatever the spa already uses. A Booker/Mindbody task if their plan exposes one, otherwise a shared inbox or a Trello card via webhook. |
@@ -272,7 +272,9 @@ that hides them is worse than one that does not have them.
   offered the same slot.
 - The catalog is seven representative treatments, hardcoded. Real use needs it in a table the front
   desk can edit without a deploy.
-- Nothing is sent. No email, no text, no calendar entry.
+- Nothing is sent by the system itself. The dashboard hands the approved draft to the staff
+  member's own mail or messages app, so a reply can actually go out today, but there is no
+  server-side delivery and therefore no record of what was sent or when.
 - No duplicate detection. The same guest submitting twice creates two leads.
 - A failed automation is recorded but not retried.
 - The reading happens moments after submission, so a lead can briefly appear with no summary. The

@@ -43,6 +43,23 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
   const service = findService(ai?.serviceInterest ?? null);
   const slots = parseSlots(ai?.proposedSlots ?? null);
 
+  /*
+    Sending is deliberately handed off to the staff member's own mail or messaging app rather than
+    posted through an API. It means a person physically presses send, which is the rule the whole
+    system is built around, and it works today without a mail provider, a verified domain or a key.
+    Swapping this for a server-side send is described in the README.
+  */
+  const draft = ai?.draftResponse ?? "";
+  const handoff =
+    lead.contactMethod === "text"
+      ? { href: `sms:${lead.phone}?&body=${encodeURIComponent(draft)}`, label: "Open in messages" }
+      : lead.contactMethod === "phone"
+        ? { href: `tel:${lead.phone}`, label: `Call ${lead.phone}` }
+        : {
+            href: `mailto:${lead.email}?subject=${encodeURIComponent("Your enquiry with Majesty Day Spa")}&body=${encodeURIComponent(draft)}`,
+            label: "Open in email",
+          };
+
   async function setStatus(formData: FormData) {
     "use server";
     const next = String(formData.get("status"));
@@ -162,19 +179,29 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button
                   type="submit"
-                  className="bg-accent px-5 py-2.5 text-[14px] font-medium text-paper-raised transition-all hover:bg-accent-hover active:translate-y-px"
+                  className="rounded-full border border-line-strong px-5 py-2.5 text-[14px] font-medium transition-colors hover:border-ink"
                 >
                   Save edits
                 </button>
+                <a
+                  href={handoff.href}
+                  className="rounded-full bg-accent px-5 py-2.5 text-[14px] font-medium text-white transition-all hover:bg-accent-hover active:translate-y-px"
+                >
+                  {handoff.label}
+                </a>
+              </div>
+              <div className="mt-3">
                 <SimulatedNote>
-                  Edit before it goes anywhere. Nothing is sent from this prototype.
+                  Save your edits first, then hand off. This opens your own mail or messages app with
+                  the reply ready, by whichever way the guest asked to be reached, so a person
+                  presses send rather than the system.
                 </SimulatedNote>
               </div>
             </form>
           </section>
 
           <section className="mb-8">
-            <SectionHeader>What ran</SectionHeader>
+            <SectionHeader>Automation status</SectionHeader>
             <div className="overflow-x-auto border border-line">
               <table className="w-full min-w-[520px] border-collapse bg-paper-raised text-left text-[14px]">
                 <thead>
